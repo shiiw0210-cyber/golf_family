@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>家族ゴルフ大会</title>
+<title>若林ファミリーゴルフカップ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js" defer></script>
 <style>
   :root {
     --cream: #fdf6e3;
@@ -810,6 +811,169 @@
   table.scores td.score-bogey input,
   table.scores td.score-double input { font-weight: 800; }
 
+  /* OCR panel */
+  .score-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+  .score-actions .btn-danger { margin-top: 0; }
+  .ocr-panel {
+    margin-top: 16px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(212, 160, 23, 0.25);
+    animation: cardRise 0.4s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .ocr-panel[hidden] { display: none; }
+  .ocr-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .ocr-head h3 { margin: 0; font-size: 15px; color: var(--green); flex: 1; }
+  .ocr-close {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: #fffdf5;
+    color: #9a8a6a;
+    font-size: 18px;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1;
+  }
+  .ocr-close:hover { background: #ffe5e5; color: #c62828; border-color: #f3bbbb; }
+  .ocr-note { font-size: 12px; color: var(--ink-soft); margin: 0 0 10px; line-height: 1.6; }
+  .ocr-note strong { color: var(--green); }
+  .ocr-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .ocr-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .ocr-status { font-size: 12px; color: var(--ink-soft); }
+
+  .ocr-images { display: flex; flex-direction: column; gap: 10px; }
+  .ocr-image-card {
+    background: #fffef6;
+    border: 1px solid #e6d9b0;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .ocr-image-head {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .ocr-thumb {
+    width: 56px; height: 56px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #f3ebd0;
+    border: 1px solid #e6d9b0;
+    flex-shrink: 0;
+  }
+  .ocr-meta { flex: 1; min-width: 0; }
+  .ocr-filename {
+    font-size: 12px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ocr-image-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ocr-image-actions select {
+    padding: 6px 8px;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .ocr-image-actions button {
+    padding: 6px 10px;
+    border: 1px solid var(--green);
+    background: var(--card-bg);
+    color: var(--green);
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .ocr-image-actions button.danger { border-color: #c62828; color: #c62828; }
+  .ocr-image-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .ocr-progress {
+    height: 6px;
+    background: #f3ebd0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 6px 0;
+  }
+  .ocr-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    width: 0%;
+    transition: width 0.2s ease;
+  }
+  .ocr-stage { font-size: 11px; color: var(--ink-soft); margin: 2px 0 6px; }
+
+  .ocr-result-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 4px;
+    margin: 6px 0 8px;
+  }
+  @media (max-width: 520px) { .ocr-result-grid { grid-template-columns: repeat(6, 1fr); } }
+  .ocr-result-cell {
+    display: flex; flex-direction: column; align-items: center;
+    background: #fff;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    padding: 3px 2px;
+  }
+  .ocr-result-cell label {
+    font-size: 9px;
+    color: var(--ink-soft);
+    margin-bottom: 1px;
+    font-weight: 600;
+  }
+  .ocr-result-cell input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    font-family: inherit;
+    padding: 2px 0;
+  }
+  .ocr-result-cell input:focus { outline: 2px solid var(--gold); border-radius: 4px; }
+  .ocr-result-cell.par-3 { background: #fff8e0; }
+  .ocr-result-cell.par-5 { background: #f0fce4; }
+
+  .ocr-raw {
+    font-size: 11px;
+    color: #9a8a6a;
+    background: #fff;
+    border: 1px dashed #e6d9b0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    word-break: break-all;
+    max-height: 60px;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+  .ocr-raw summary { cursor: pointer; color: var(--ink-soft); font-weight: 600; }
+
   /* Respect reduced-motion preferences */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -825,7 +989,7 @@
 <body>
 
 <header>
-  <h1>⛳ 家族ゴルフ大会</h1>
+  <h1>⛳ 若林ファミリーゴルフカップ</h1>
   <nav>
     <button data-tab="home" class="active">ホーム</button>
     <button data-tab="setup">編成</button>
@@ -905,7 +1069,29 @@
     <div class="score-table-wrap">
       <table class="scores" id="scoreTable"></table>
     </div>
-    <button class="btn-danger" id="resetBtn">スコアをリセット</button>
+    <div class="score-actions">
+      <button class="btn btn-outline" id="ocrOpenBtn" type="button">📷 写真から読み取り (β)</button>
+      <button class="btn-danger" id="resetBtn">スコアをリセット</button>
+    </div>
+
+    <div class="ocr-panel" id="ocrPanel" hidden>
+      <div class="ocr-head">
+        <h3>📷 スコアカードを写真から読み取り (試用版)</h3>
+        <button type="button" class="ocr-close" id="ocrCloseBtn" aria-label="閉じる">×</button>
+      </div>
+      <p class="ocr-note">
+        無料の<strong>ブラウザ内OCR (Tesseract.js)</strong> を使用。手書きスコアの読み取り精度には限界があります。
+        読み取り結果は必ず確認・修正してから「反映」してください。
+      </p>
+      <div class="ocr-controls">
+        <label class="btn btn-outline ocr-add-btn">
+          ＋ 画像を追加
+          <input type="file" id="ocrFileInput" accept="image/*" multiple hidden>
+        </label>
+        <span class="ocr-status" id="ocrStatus"></span>
+      </div>
+      <div class="ocr-images" id="ocrImages"></div>
+    </div>
   </section>
 
   <section id="tab-ranking">
@@ -2097,7 +2283,286 @@ if (!prefersReducedMotion) {
   }, { passive: true });
 }
 
+/* ---------- OCR (Tesseract.js) ---------- */
+
+const OCR_STAGE_LABELS = {
+  'loading tesseract core': 'OCRコア読込中',
+  'initializing tesseract': '初期化中',
+  'loading language traineddata': '言語データ読込中',
+  'initializing api': 'API初期化中',
+  'recognizing text': '文字認識中',
+};
+
+const ocr = {
+  worker: null,
+  workerLoadPromise: null,
+  activeJobId: null,
+  images: [],
+  nextId: 1,
+};
+
+async function getOcrWorker() {
+  if (ocr.worker) return ocr.worker;
+  if (ocr.workerLoadPromise) return ocr.workerLoadPromise;
+  if (typeof Tesseract === 'undefined') {
+    throw new Error('Tesseract.js が読み込まれていません。インターネット接続を確認してください。');
+  }
+  setOcrStatus('OCRエンジンを準備中... (初回のみ少し時間がかかります)');
+  ocr.workerLoadPromise = (async () => {
+    const w = await Tesseract.createWorker('eng', 1, {
+      logger: m => onTesseractProgress(m),
+    });
+    await w.setParameters({
+      tessedit_char_whitelist: '0123456789 ',
+    });
+    ocr.worker = w;
+    setOcrStatus('OCRエンジン準備完了');
+    setTimeout(() => setOcrStatus(''), 1500);
+    return w;
+  })();
+  try {
+    return await ocr.workerLoadPromise;
+  } catch (e) {
+    ocr.workerLoadPromise = null;
+    setOcrStatus('OCRエンジンの読み込みに失敗しました。');
+    throw e;
+  }
+}
+
+function onTesseractProgress(m) {
+  if (!ocr.activeJobId) return;
+  const img = ocr.images.find(x => x.id === ocr.activeJobId);
+  if (!img) return;
+  const label = OCR_STAGE_LABELS[m.status] || m.status || '';
+  img.stage = label;
+  if (typeof m.progress === 'number') {
+    img.progress = Math.max(0, Math.min(100, Math.round(m.progress * 100)));
+  }
+  updateImageProgressUI(img);
+}
+
+function setOcrStatus(text) {
+  const el = document.getElementById('ocrStatus');
+  if (el) el.textContent = text || '';
+}
+
+function openOcrPanel() {
+  const panel = document.getElementById('ocrPanel');
+  if (!panel) return;
+  panel.hidden = false;
+  renderOcrImages();
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeOcrPanel() {
+  const panel = document.getElementById('ocrPanel');
+  if (!panel) return;
+  panel.hidden = true;
+  ocr.images.forEach(img => { if (img.blobUrl) URL.revokeObjectURL(img.blobUrl); });
+  ocr.images = [];
+  setOcrStatus('');
+}
+
+function addOcrImages(fileList) {
+  Array.from(fileList || []).forEach(f => {
+    if (!f.type || !f.type.startsWith('image/')) return;
+    ocr.images.push({
+      id: ocr.nextId++,
+      file: f,
+      blobUrl: URL.createObjectURL(f),
+      member: '',
+      status: 'idle',
+      progress: 0,
+      stage: '',
+      scores: null,
+      rawText: '',
+      error: '',
+    });
+  });
+  renderOcrImages();
+}
+
+function removeOcrImage(id) {
+  const img = ocr.images.find(x => x.id === id);
+  if (img && img.blobUrl) URL.revokeObjectURL(img.blobUrl);
+  ocr.images = ocr.images.filter(x => x.id !== id);
+  renderOcrImages();
+}
+
+async function runOcrFor(id) {
+  const img = ocr.images.find(x => x.id === id);
+  if (!img) return;
+  if (img.status === 'running') return;
+  if (ocr.images.some(x => x.status === 'running')) {
+    alert('別の画像を解析中です。完了してから再度お試しください。');
+    return;
+  }
+  img.status = 'running';
+  img.progress = 0;
+  img.stage = '準備中';
+  img.error = '';
+  ocr.activeJobId = id;
+  renderOcrImages();
+  try {
+    const worker = await getOcrWorker();
+    const { data } = await worker.recognize(img.file);
+    img.rawText = (data && data.text) || '';
+    img.scores = parseScoresFromText(img.rawText);
+    img.status = 'done';
+    img.stage = '完了';
+    img.progress = 100;
+  } catch (e) {
+    img.status = 'error';
+    img.error = (e && e.message) ? e.message : String(e);
+  } finally {
+    if (ocr.activeJobId === id) ocr.activeJobId = null;
+    renderOcrImages();
+  }
+}
+
+function parseScoresFromText(text) {
+  const tokens = (text.match(/\d+/g) || []).map(n => parseInt(n, 10));
+  const plausible = tokens.filter(n => n >= 1 && n <= 15);
+  const out = Array(HOLES).fill(null);
+  for (let i = 0; i < Math.min(HOLES, plausible.length); i++) {
+    out[i] = plausible[i];
+  }
+  return out;
+}
+
+function applyOcrResults(id) {
+  const img = ocr.images.find(x => x.id === id);
+  if (!img) return;
+  if (!img.member) { alert('対象メンバーを選択してください'); return; }
+  if (!img.scores) { alert('まず「解析」を実行してください'); return; }
+  const card = document.querySelector(`.ocr-image-card[data-id="${id}"]`);
+  if (card) {
+    card.querySelectorAll('input.ocr-score-input').forEach(inp => {
+      const h = +inp.dataset.h;
+      const v = inp.value.trim();
+      img.scores[h] = v === '' ? null : Number(v);
+    });
+  }
+  let count = 0;
+  for (let h = 0; h < HOLES; h++) {
+    const v = img.scores[h];
+    if (v != null && Number.isFinite(v) && v > 0) {
+      state.current.scores[img.member][h] = v;
+      count++;
+    }
+  }
+  saveState();
+  renderScoreTable();
+  renderRanking();
+  renderHome();
+  haptic(14);
+  alert(`${img.member} のスコアを ${count} ホール分反映しました。`);
+}
+
+function memberOptionsHtml(selected) {
+  let html = `<option value="" ${selected === '' || selected == null ? 'selected' : ''}>対象メンバー</option>`;
+  MEMBERS.forEach(m => {
+    html += `<option value="${escapeHtml(m)}" ${m === selected ? 'selected' : ''}>${escapeHtml(m)}</option>`;
+  });
+  return html;
+}
+
+function renderOcrImages() {
+  const root = document.getElementById('ocrImages');
+  if (!root) return;
+  if (ocr.images.length === 0) {
+    root.innerHTML = '<div style="font-size:13px;color:#9a8a6a;text-align:center;padding:14px;">画像が追加されていません。「＋ 画像を追加」から写真を選んでください。</div>';
+    return;
+  }
+  const isAnyRunning = ocr.images.some(x => x.status === 'running');
+  const pars = currentPars();
+  root.innerHTML = ocr.images.map(img => {
+    const isRunning = img.status === 'running';
+    const isDone = img.status === 'done';
+    const isError = img.status === 'error';
+    const progressBar = isRunning ? `
+      <div class="ocr-stage">${escapeHtml(img.stage || '')} (${img.progress}%)</div>
+      <div class="ocr-progress"><div class="ocr-progress-bar" style="width:${img.progress}%"></div></div>
+    ` : '';
+    let resultGrid = '';
+    if (isDone && img.scores) {
+      resultGrid = '<div class="ocr-result-grid">' +
+        img.scores.map((v, h) => {
+          const par = pars ? pars[h] : null;
+          const cls = par === 3 ? 'par-3' : (par === 5 ? 'par-5' : '');
+          return `
+            <div class="ocr-result-cell ${cls}">
+              <label>H${h+1}${par ? ' (P' + par + ')' : ''}</label>
+              <input type="number" inputmode="numeric" min="1" max="20" class="ocr-score-input"
+                     data-id="${img.id}" data-h="${h}" value="${v ?? ''}">
+            </div>`;
+        }).join('') + '</div>';
+    }
+    const errorBox = isError ? `<div style="color:#c62828;font-size:12px;margin:4px 0;">エラー: ${escapeHtml(img.error)}</div>` : '';
+    const rawDetails = (isDone && img.rawText) ? `
+      <details class="ocr-raw">
+        <summary>OCR生テキストを表示</summary>
+        <div>${escapeHtml(img.rawText)}</div>
+      </details>` : '';
+    return `
+      <div class="ocr-image-card" data-id="${img.id}">
+        <div class="ocr-image-head">
+          <img src="${img.blobUrl}" class="ocr-thumb" alt="">
+          <div class="ocr-meta">
+            <div class="ocr-filename">${escapeHtml(img.file.name)}</div>
+          </div>
+          <div class="ocr-image-actions">
+            <select data-id="${img.id}" class="ocr-member-select">${memberOptionsHtml(img.member)}</select>
+            <button data-action="run" data-id="${img.id}" ${isAnyRunning ? 'disabled' : ''}>${isDone ? '再解析' : '解析'}</button>
+            <button data-action="apply" data-id="${img.id}" ${isDone ? '' : 'disabled'}>反映</button>
+            <button data-action="remove" data-id="${img.id}" class="danger" ${isRunning ? 'disabled' : ''}>削除</button>
+          </div>
+        </div>
+        ${progressBar}
+        ${errorBox}
+        ${resultGrid}
+        ${rawDetails}
+      </div>
+    `;
+  }).join('');
+  root.querySelectorAll('.ocr-member-select').forEach(sel => {
+    sel.onchange = () => {
+      const img = ocr.images.find(x => x.id === +sel.dataset.id);
+      if (img) img.member = sel.value;
+    };
+  });
+  root.querySelectorAll('button[data-action]').forEach(btn => {
+    const id = +btn.dataset.id;
+    if (btn.dataset.action === 'run') btn.onclick = () => runOcrFor(id);
+    if (btn.dataset.action === 'apply') btn.onclick = () => applyOcrResults(id);
+    if (btn.dataset.action === 'remove') btn.onclick = () => removeOcrImage(id);
+  });
+}
+
+function updateImageProgressUI(img) {
+  const card = document.querySelector(`.ocr-image-card[data-id="${img.id}"]`);
+  if (!card) return;
+  const stage = card.querySelector('.ocr-stage');
+  const bar = card.querySelector('.ocr-progress-bar');
+  if (stage) stage.textContent = `${img.stage || ''} (${img.progress}%)`;
+  if (bar) bar.style.width = `${img.progress}%`;
+}
+
+function wireOcrUI() {
+  const openBtn = document.getElementById('ocrOpenBtn');
+  const closeBtn = document.getElementById('ocrCloseBtn');
+  const fileInput = document.getElementById('ocrFileInput');
+  if (!openBtn || !closeBtn || !fileInput) return;
+  openBtn.onclick = openOcrPanel;
+  closeBtn.onclick = closeOcrPanel;
+  fileInput.onchange = () => {
+    addOcrImages(fileInput.files);
+    fileInput.value = '';
+  };
+}
+
 wireCourseForm();
+wireOcrUI();
 renderAll();
 requestAnimationFrame(updateNavIndicator);
 window.addEventListener('load', updateNavIndicator);
