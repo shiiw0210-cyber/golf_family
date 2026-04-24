@@ -4,19 +4,83 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>家族ゴルフ大会</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --cream: #fdf6e3;
+    --cream-deep: #f6ecd1;
+    --ink: #3a2f1b;
+    --ink-soft: #6b5a3a;
+    --gold: #d4a017;
+    --gold-light: #f5c048;
+    --gold-bright: #ffd700;
+    --green: #2d5016;
+    --green-soft: #4a7c24;
+    --card-bg: #fffdf5;
+    --card-shadow: 0 2px 4px rgba(120, 95, 40, 0.08), 0 1px 2px rgba(60, 45, 10, 0.06);
+    --card-shadow-lg: 0 6px 16px rgba(120, 95, 40, 0.14), 0 2px 4px rgba(60, 45, 10, 0.08);
+  }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif; margin: 0; background: #f4f6f1; color: #222; }
-  header { background: #2d5016; color: #fff; padding: 16px; }
-  header h1 { margin: 0 0 12px; font-size: 20px; }
+  body {
+    font-family: "M PLUS Rounded 1c", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    margin: 0;
+    color: var(--ink);
+    background-color: var(--cream);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'><g fill='%23d4a017' fill-opacity='0.09'><circle cx='8' cy='8' r='2'/><circle cx='28' cy='14' r='2'/><circle cx='48' cy='8' r='2'/><circle cx='16' cy='30' r='2'/><circle cx='36' cy='34' r='2'/><circle cx='6' cy='48' r='2'/><circle cx='26' cy='48' r='2'/><circle cx='46' cy='48' r='2'/></g></svg>");
+    background-size: 56px 56px;
+  }
+  header {
+    background: linear-gradient(135deg, #2d5016 0%, #3e6b1d 100%);
+    color: #fff;
+    padding: 18px 16px 16px;
+    border-bottom: 3px solid var(--gold);
+    box-shadow: 0 2px 6px rgba(60, 45, 10, 0.12);
+  }
+  header h1 { margin: 0 0 12px; font-size: 20px; font-weight: 800; letter-spacing: 0.02em; }
   nav { display: flex; gap: 6px; flex-wrap: wrap; }
-  nav button { background: rgba(255,255,255,0.15); color: #fff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.2s ease, color 0.2s ease, transform 0.08s ease; }
+  nav button {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 500;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.08s ease, box-shadow 0.2s ease;
+  }
   nav button:hover { background: rgba(255,255,255,0.28); }
   nav button:active { transform: scale(0.94); }
-  nav button.active { background: #fff; color: #2d5016; font-weight: bold; }
+  nav button.active {
+    background: #fff;
+    color: var(--green);
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--gold-bright) inset, 0 2px 6px rgba(0,0,0,0.15);
+  }
   main { padding: 16px; max-width: 960px; margin: 0 auto; }
   section { display: none; }
   section.active { display: block; animation: tabFade 0.35s ease both; }
+  h2 { margin-top: 0; font-size: 20px; font-weight: 800; color: var(--green); letter-spacing: 0.02em; }
+  h2::after {
+    content: "";
+    display: block; width: 48px; height: 3px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 2px; margin-top: 6px;
+  }
+  h3 { margin: 24px 0 8px; font-size: 15px; color: var(--ink-soft); font-weight: 700; }
+  .note {
+    background: #fff8dc;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--gold);
+    box-shadow: var(--card-shadow);
+    color: var(--ink);
+  }
   @keyframes tabFade {
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -56,71 +120,170 @@
     position: fixed; inset: 0; width: 100%; height: 100%;
     pointer-events: none; z-index: 9999; display: none;
   }
-  h2 { margin-top: 0; font-size: 18px; }
-  h3 { margin: 24px 0 8px; font-size: 15px; color: #444; }
-  .note { background: #fff8dc; padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; border-left: 4px solid #d4a017; }
-
   /* Home */
-  .home-card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); margin-bottom: 12px; }
-  .home-card h3 { margin-top: 0; }
-  .home-meta { color: #555; font-size: 14px; margin: 4px 0; }
-  .home-empty { color: #888; font-size: 14px; }
+  .home-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 12px;
+    border: 1px solid rgba(212, 160, 23, 0.15);
+  }
+  .home-card h3 { margin-top: 0; color: var(--green); }
+  .home-meta { color: var(--ink-soft); font-size: 14px; margin: 4px 0; }
+  .home-empty { color: #9a8a6a; font-size: 14px; }
 
   /* Setup (tournament info) */
   .setup-grid { display: grid; gap: 10px; grid-template-columns: 1fr; margin-bottom: 16px; }
   @media (min-width: 600px) { .setup-grid { grid-template-columns: 1fr 1fr; } }
-  .field { background: #fff; padding: 10px 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-  .field label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
-  .field input { width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 8px; font-size: 15px; }
+  .field {
+    background: var(--card-bg);
+    padding: 12px 14px;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(212, 160, 23, 0.15);
+  }
+  .field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; font-weight: 500; }
+  .field input {
+    width: 100%;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 15px;
+    font-family: inherit;
+    background: #fffef9;
+    color: var(--ink);
+  }
+  .field input:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
 
   /* Teams */
   .team-grid { display: grid; gap: 8px; grid-template-columns: 1fr; }
   @media (min-width: 600px) { .team-grid { grid-template-columns: 1fr 1fr; } }
-  .member-card { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px 14px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
-  .member-name { font-size: 16px; font-weight: 500; }
-  .team-buttons button { padding: 6px 14px; border: 2px solid #ddd; background: #fff; border-radius: 4px; margin-left: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
-  .team-buttons button.team-A.selected { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-  .team-buttons button.team-B.selected { background: #ef4444; color: #fff; border-color: #ef4444; }
+  .member-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    padding: 12px 14px;
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(212, 160, 23, 0.15);
+  }
+  .member-name { font-size: 16px; font-weight: 500; color: var(--ink); }
+  .team-buttons button {
+    padding: 6px 14px;
+    border: 2px solid #e0d4b0;
+    background: #fffdf2;
+    color: var(--ink);
+    border-radius: 999px;
+    margin-left: 4px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .team-buttons button.team-A.selected { background: #3b82f6; color: #fff; border-color: #3b82f6; box-shadow: 0 2px 6px rgba(59,130,246,0.35); }
+  .team-buttons button.team-B.selected { background: #ef4444; color: #fff; border-color: #ef4444; box-shadow: 0 2px 6px rgba(239,68,68,0.35); }
   .team-summary { display: flex; gap: 10px; margin-top: 16px; }
-  .team-summary > div { flex: 1; padding: 10px; border-radius: 6px; text-align: center; color: #fff; font-weight: bold; }
-  .bg-A { background: #3b82f6; }
-  .bg-B { background: #ef4444; }
+  .team-summary > div {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: var(--card-shadow);
+  }
+  .bg-A { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+  .bg-B { background: linear-gradient(135deg, #ef4444, #dc2626); }
 
   /* Scores */
   .score-toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .btn { background: #2d5016; color: #fff; border: none; padding: 10px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; }
-  .btn-outline { background: #fff; color: #2d5016; border: 1px solid #2d5016; }
-  .btn-danger { background: #c62828; color: #fff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; margin-top: 16px; }
-  .score-table-wrap { overflow-x: auto; background: #fff; border-radius: 6px; }
+  .btn {
+    background: linear-gradient(135deg, var(--green), var(--green-soft));
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(45, 80, 22, 0.25);
+  }
+  .btn:hover { box-shadow: 0 3px 10px rgba(45, 80, 22, 0.35); }
+  .btn-outline { background: var(--card-bg); color: var(--green); border: 1px solid var(--green); box-shadow: none; }
+  .btn-danger {
+    background: #c62828;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    margin-top: 16px;
+    font-family: inherit;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(198, 40, 40, 0.25);
+  }
+  .score-table-wrap {
+    overflow-x: auto;
+    background: var(--card-bg);
+    border-radius: 10px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(212, 160, 23, 0.15);
+  }
   table.scores { border-collapse: collapse; width: 100%; min-width: 720px; }
-  table.scores th, table.scores td { border: 1px solid #e4e4e4; padding: 2px; text-align: center; font-size: 13px; }
-  table.scores thead th { background: #ecebe2; position: sticky; top: 0; font-weight: 600; }
-  table.scores td.name { text-align: left; padding-left: 8px; white-space: nowrap; }
-  table.scores input { width: 38px; border: none; background: transparent; text-align: center; font-size: 14px; padding: 6px 0; }
-  table.scores input:focus { outline: 2px solid #2d5016; background: #fffde7; }
-  table.scores td.total { background: #f6f6ef; font-weight: bold; min-width: 44px; }
+  table.scores th, table.scores td { border: 1px solid #f0e6c8; padding: 2px; text-align: center; font-size: 13px; }
+  table.scores thead th { background: var(--cream-deep); position: sticky; top: 0; font-weight: 700; color: var(--ink); }
+  table.scores td.name { text-align: left; padding-left: 10px; white-space: nowrap; color: var(--ink); }
+  table.scores input { width: 38px; border: none; background: transparent; text-align: center; font-size: 14px; padding: 6px 0; font-family: inherit; color: var(--ink); }
+  table.scores input:focus { outline: 2px solid var(--gold); background: #fffde7; }
+  table.scores td.total { background: #fbf3d8; font-weight: 800; min-width: 44px; color: var(--green); }
   .team-badge { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
 
   /* Ranking */
   .team-result { display: flex; gap: 10px; margin-bottom: 8px; }
-  .team-result > div { flex: 1; padding: 18px; border-radius: 8px; color: #fff; text-align: center; }
-  .team-result h4 { margin: 0 0 6px; font-size: 16px; }
+  .team-result > div {
+    flex: 1;
+    padding: 20px;
+    border-radius: 12px;
+    color: #fff;
+    text-align: center;
+    box-shadow: var(--card-shadow-lg);
+  }
+  .team-result h4 { margin: 0 0 6px; font-size: 16px; font-weight: 700; }
   .team-result .members { font-size: 12px; opacity: 0.9; min-height: 18px; }
-  .team-result .score { font-size: 32px; font-weight: bold; margin-top: 6px; }
-  .winner { outline: 4px solid #ffd700; outline-offset: -4px; }
-  .verdict { text-align: center; font-weight: bold; margin: 12px 0 20px; font-size: 16px; }
-  .ranking-table { width: 100%; background: #fff; border-collapse: collapse; border-radius: 6px; overflow: hidden; }
-  .ranking-table th, .ranking-table td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; font-size: 14px; }
-  .ranking-table th { background: #ecebe2; }
-  .ranking-table .rank { width: 40px; text-align: center; font-weight: bold; }
-  .ranking-table tr.top1 td { background: #fffbea; font-weight: bold; }
+  .team-result .score { font-size: 34px; font-weight: 800; margin-top: 6px; }
+  .winner { outline: 4px solid var(--gold-bright); outline-offset: -4px; box-shadow: 0 0 0 2px #fff, 0 6px 18px rgba(212, 160, 23, 0.4); }
+  .verdict { text-align: center; font-weight: 700; margin: 12px 0 20px; font-size: 16px; }
+  .ranking-table {
+    width: 100%;
+    background: var(--card-bg);
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+  }
+  .ranking-table th, .ranking-table td { padding: 10px 12px; border-bottom: 1px solid #f0e6c8; text-align: left; font-size: 14px; }
+  .ranking-table th { background: var(--cream-deep); color: var(--ink); font-weight: 700; }
+  .ranking-table .rank { width: 40px; text-align: center; font-weight: 800; color: var(--green); }
+  .ranking-table tr.top1 td { background: #fff7dc; font-weight: 700; }
+  .ranking-table tr.top1 .rank { color: var(--gold); }
 
   /* History */
-  .history-item { background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.08); margin-bottom: 10px; }
-  .history-item h4 { margin: 0 0 4px; font-size: 16px; }
-  .history-meta { color: #666; font-size: 13px; margin-bottom: 6px; }
-  .history-winner { font-weight: bold; color: #b45309; }
-  .history-empty { color: #888; font-size: 14px; text-align: center; padding: 24px; }
+  .history-item {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 10px;
+    border: 1px solid rgba(212, 160, 23, 0.15);
+    border-left: 4px solid var(--gold);
+  }
+  .history-item h4 { margin: 0 0 4px; font-size: 16px; color: var(--green); font-weight: 700; }
+  .history-meta { color: var(--ink-soft); font-size: 13px; margin-bottom: 6px; }
+  .history-winner { font-weight: 700; color: var(--gold); }
+  .history-empty { color: #9a8a6a; font-size: 14px; text-align: center; padding: 24px; }
 </style>
 </head>
 <body>
