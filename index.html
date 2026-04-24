@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
   :root {
     --cream: #fdf6e3;
@@ -271,7 +273,56 @@
   table.scores input { width: 38px; border: none; background: transparent; text-align: center; font-size: 14px; padding: 6px 0; font-family: inherit; color: var(--ink); }
   table.scores input:focus { outline: 2px solid var(--gold); background: #fffde7; }
   table.scores td.total { background: #fbf3d8; font-weight: 800; min-width: 44px; color: var(--green); }
+  table.scores tr.team-header td {
+    text-align: left;
+    padding: 6px 12px;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  table.scores tr.team-header.team-row-A td { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+  table.scores tr.team-header.team-row-B td { background: linear-gradient(135deg, #ef4444, #dc2626); }
+  table.scores tr.team-header.team-row-none td { background: #c9b98a; color: #4a3d1c; }
+  table.scores tr.member-A td.name { background: #eaf2ff; }
+  table.scores tr.member-B td.name { background: #ffe9e9; }
   .team-badge { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+
+  /* Sync status badge */
+  .sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.06em;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    margin-left: 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .sync-badge .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ffb4b4;
+    box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+  }
+  .sync-badge.state-connected { background: rgba(76, 175, 80, 0.28); }
+  .sync-badge.state-connected .dot {
+    background: #8fff9a;
+    animation: syncPulse 1.8s ease-in-out infinite;
+  }
+  .sync-badge.state-connecting { background: rgba(255, 215, 0, 0.22); }
+  .sync-badge.state-connecting .dot { background: var(--gold-bright); }
+  .sync-badge.state-local { background: rgba(255,255,255,0.15); }
+  .sync-badge.state-local .dot { background: #d9c9a4; }
+  @keyframes syncPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(143, 255, 154, 0.55); }
+    50%      { box-shadow: 0 0 0 6px rgba(143, 255, 154, 0); }
+  }
 
   /* Ranking */
   .team-result { display: flex; gap: 10px; margin-bottom: 8px; }
@@ -663,7 +714,7 @@
 <body>
 
 <header>
-  <h1>⛳ 家族ゴルフ大会</h1>
+  <h1>⛳ 家族ゴルフ大会<span id="syncBadge" class="sync-badge state-local" title="同期状態"><span class="dot"></span><span class="label">ローカル</span></span></h1>
   <nav>
     <button data-tab="home" class="active">ホーム</button>
     <button data-tab="setup">編成</button>
@@ -777,6 +828,35 @@ const HOLES = 18;
 const STORAGE_KEY = 'golfFamilyData_v2';
 const LEGACY_KEY = 'golfFamilyData_v1';
 
+/* =======================================================================
+   クラウド同期 (Firebase Realtime Database)
+   -----------------------------------------------------------------------
+   下の FIREBASE_CONFIG に Firebase プロジェクトの設定を貼り付けると、
+   URL を知っている全員でスコア・編成・日程などがリアルタイムに共有されます。
+   未設定のままだと、従来どおりブラウザのローカル保存だけになります。
+
+   セットアップ手順:
+   1. https://console.firebase.google.com/ で新しいプロジェクトを作成
+   2. 「Realtime Database」を有効化 (ロケーションは asia-southeast1 推奨)
+   3. ルールを一時的に { "rules": { ".read": true, ".write": true } } に設定
+   4. プロジェクト設定 → 全般 → ウェブアプリを追加して config をコピー
+   5. 下の FIREBASE_CONFIG に貼り付けてデプロイ
+   ======================================================================= */
+const FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  databaseURL: "",
+  projectId: "",
+};
+const SYNC_ROOM_ID = 'family-main';
+
+const CLIENT_ID = Math.random().toString(36).slice(2, 10);
+let cloudRef = null;
+let cloudConnectedRef = null;
+let lastWriteToken = null;
+let pendingPushTimer = null;
+let remoteApplyInProgress = false;
+
 const LEGACY_SEED = [
   { number: 1, individualWinner: 'くみこ' },
   { number: 2, individualWinner: 'のぶき' },
@@ -845,6 +925,169 @@ function loadState() {
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (!remoteApplyInProgress) pushToCloud();
+}
+
+function isCloudConfigured() {
+  return !!(FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL.startsWith('http'));
+}
+
+function setSyncBadge(stateName, label) {
+  const el = document.getElementById('syncBadge');
+  if (!el) return;
+  el.classList.remove('state-local', 'state-connecting', 'state-connected');
+  el.classList.add('state-' + stateName);
+  const lbl = el.querySelector('.label');
+  if (lbl) lbl.textContent = label;
+}
+
+function sanitizeRemoteState(remote) {
+  if (!remote || typeof remote !== 'object') return null;
+  const current = remote.current && typeof remote.current === 'object' ? remote.current : null;
+  if (!current) return null;
+  const teams = {};
+  const scores = {};
+  for (const m of MEMBERS) {
+    teams[m] = (current.teams && (current.teams[m] === 'A' || current.teams[m] === 'B')) ? current.teams[m] : null;
+    const raw = current.scores && current.scores[m];
+    const arr = Array(HOLES).fill(null);
+    if (raw) {
+      // Firebase returns either an array or an object keyed by index.
+      for (let i = 0; i < HOLES; i++) {
+        const v = Array.isArray(raw) ? raw[i] : raw[i] ?? raw[String(i)];
+        arr[i] = (typeof v === 'number' && v > 0) ? v : null;
+      }
+    }
+    scores[m] = arr;
+  }
+  const sanitizedCurrent = {
+    number: Number(current.number) > 0 ? Number(current.number) : 1,
+    date: typeof current.date === 'string' ? current.date : '',
+    venue: typeof current.venue === 'string' ? current.venue : '',
+    teams,
+    scores,
+  };
+  const history = Array.isArray(remote.history) ? remote.history.filter(h => h && typeof h === 'object') : [];
+  return {
+    current: sanitizedCurrent,
+    history,
+    legacySeeded: !!remote.legacySeeded,
+  };
+}
+
+function statesEqual(a, b) {
+  try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; }
+}
+
+function captureFocus() {
+  const el = document.activeElement;
+  if (!el || el === document.body) return null;
+  const sel = { caretStart: null, caretEnd: null };
+  try { sel.caretStart = el.selectionStart; sel.caretEnd = el.selectionEnd; } catch (e) {}
+  if (el.dataset && el.dataset.m != null && el.dataset.h != null) {
+    return { kind: 'score', m: el.dataset.m, h: el.dataset.h, ...sel };
+  }
+  if (el.id) return { kind: 'id', id: el.id, ...sel };
+  return null;
+}
+
+function restoreFocus(info) {
+  if (!info) return;
+  let el = null;
+  if (info.kind === 'score') {
+    el = document.querySelector(`table.scores input[data-m="${CSS.escape(info.m)}"][data-h="${info.h}"]`);
+  } else if (info.kind === 'id') {
+    el = document.getElementById(info.id);
+  }
+  if (!el) return;
+  try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+  if (info.caretStart != null && typeof el.setSelectionRange === 'function') {
+    try { el.setSelectionRange(info.caretStart, info.caretEnd); } catch (e) {}
+  }
+}
+
+function applyRemoteState(remote) {
+  const sanitized = sanitizeRemoteState(remote);
+  if (!sanitized) return;
+  if (statesEqual(state, sanitized)) return;
+  const focus = captureFocus();
+  remoteApplyInProgress = true;
+  state = sanitized;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderAll();
+  remoteApplyInProgress = false;
+  restoreFocus(focus);
+}
+
+function pushToCloud() {
+  if (!cloudRef) return;
+  if (pendingPushTimer) clearTimeout(pendingPushTimer);
+  pendingPushTimer = setTimeout(() => {
+    pendingPushTimer = null;
+    if (!cloudRef) return;
+    lastWriteToken = CLIENT_ID + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    const payload = {
+      current: state.current,
+      history: state.history,
+      legacySeeded: !!state.legacySeeded,
+      _writer: lastWriteToken,
+      _updatedAt: Date.now(),
+    };
+    cloudRef.set(payload).catch(err => {
+      console.warn('[sync] write failed:', err);
+    });
+  }, 220);
+}
+
+function initCloudSync() {
+  if (!isCloudConfigured()) {
+    setSyncBadge('local', 'ローカル');
+    console.info('[sync] Firebase 未設定 — ローカル保存のみで動作します。');
+    return;
+  }
+  if (typeof firebase === 'undefined' || !firebase.initializeApp) {
+    setSyncBadge('local', 'SDK未ロード');
+    console.warn('[sync] Firebase SDK が読み込まれていません。');
+    return;
+  }
+  setSyncBadge('connecting', '接続中...');
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    const db = firebase.database();
+    cloudRef = db.ref('rooms/' + SYNC_ROOM_ID);
+    cloudConnectedRef = db.ref('.info/connected');
+
+    cloudConnectedRef.on('value', (snap) => {
+      if (snap.val() === true) {
+        setSyncBadge('connected', '同期中');
+      } else {
+        setSyncBadge('connecting', '再接続中...');
+      }
+    });
+
+    let firstSnapshot = true;
+    cloudRef.on('value', (snap) => {
+      const data = snap.val();
+      if (firstSnapshot) {
+        firstSnapshot = false;
+        if (!data) {
+          // First user — seed the room with current local state.
+          pushToCloud();
+          return;
+        }
+      }
+      if (!data) return;
+      // Ignore the echo of our own write.
+      if (data._writer && data._writer === lastWriteToken) return;
+      applyRemoteState(data);
+    }, (err) => {
+      console.warn('[sync] read failed:', err);
+      setSyncBadge('local', '同期失敗');
+    });
+  } catch (e) {
+    console.warn('[sync] init failed:', e);
+    setSyncBadge('local', '同期失敗');
+  }
 }
 
 function totalOf(member) {
@@ -999,19 +1242,30 @@ function renderTeams() {
 
 function renderScoreTable() {
   const table = document.getElementById('scoreTable');
+  const colSpan = HOLES + 2;
   let html = '<thead><tr><th>メンバー</th>';
   for (let i = 1; i <= HOLES; i++) html += `<th>${i}</th>`;
   html += '<th class="total">計</th></tr></thead><tbody>';
-  MEMBERS.forEach(m => {
-    const t = state.current.teams[m];
-    const color = t === 'A' ? '#3b82f6' : t === 'B' ? '#ef4444' : '#bbb';
-    html += `<tr><td class="name"><span class="team-badge" style="background:${color}"></span>${m}</td>`;
-    for (let h = 0; h < HOLES; h++) {
-      const v = state.current.scores[m][h];
-      html += `<td><input type="number" inputmode="numeric" min="1" max="20" value="${v ?? ''}" data-m="${m}" data-h="${h}"></td>`;
+
+  const groups = [
+    { team: 'A',  label: 'A チーム',  rowCls: 'team-row-A',    memberCls: 'member-A',    color: '#3b82f6' },
+    { team: 'B',  label: 'B チーム',  rowCls: 'team-row-B',    memberCls: 'member-B',    color: '#ef4444' },
+    { team: null, label: '未割当',    rowCls: 'team-row-none', memberCls: 'member-none', color: '#bbb'    },
+  ];
+
+  for (const g of groups) {
+    const members = MEMBERS.filter(m => state.current.teams[m] === g.team);
+    if (members.length === 0) continue;
+    html += `<tr class="team-header ${g.rowCls}"><td colspan="${colSpan}">${g.label} (${members.length}人)</td></tr>`;
+    for (const m of members) {
+      html += `<tr class="${g.memberCls}"><td class="name"><span class="team-badge" style="background:${g.color}"></span>${m}</td>`;
+      for (let h = 0; h < HOLES; h++) {
+        const v = state.current.scores[m][h];
+        html += `<td><input type="number" inputmode="numeric" min="1" max="20" value="${v ?? ''}" data-m="${m}" data-h="${h}"></td>`;
+      }
+      html += `<td class="total" id="total-${m}" data-total="${totalOf(m)}">${totalOf(m) || '-'}</td></tr>`;
     }
-    html += `<td class="total" id="total-${m}" data-total="${totalOf(m)}">${totalOf(m) || '-'}</td></tr>`;
-  });
+  }
   html += '</tbody>';
   table.innerHTML = html;
   table.querySelectorAll('input').forEach(inp => {
@@ -1673,6 +1927,7 @@ if (!prefersReducedMotion) {
 }
 
 renderAll();
+initCloudSync();
 requestAnimationFrame(updateNavIndicator);
 window.addEventListener('load', updateNavIndicator);
 </script>
