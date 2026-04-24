@@ -554,6 +554,81 @@
     100% { opacity: 1; transform: scale(1); }
   }
 
+  /* Legacy history entries (imported past tournaments) */
+  .legacy-badge {
+    display: inline-block;
+    background: #f0e6c8;
+    color: #8a6d1a;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    margin-left: 4px;
+  }
+  .history-item { position: relative; }
+  .history-delete {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: #fffdf5;
+    color: #9a8a6a;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .history-delete:hover { background: #ffe5e5; color: #c62828; border-color: #f3bbbb; }
+
+  /* Legacy add form */
+  .legacy-add-wrap { margin-bottom: 16px; }
+  .legacy-add-wrap > button { width: 100%; }
+  .legacy-form {
+    margin-top: 12px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(212, 160, 23, 0.2);
+    animation: cardRise 0.4s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .legacy-form[hidden] { display: none; }
+  .legacy-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+  }
+  @media (max-width: 520px) { .legacy-form-grid { grid-template-columns: 1fr; } }
+  .legacy-form label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .legacy-form input, .legacy-form select {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 15px;
+    background: #fffef9;
+    color: var(--ink);
+  }
+  .legacy-form input:focus, .legacy-form select:focus {
+    outline: 2px solid var(--gold);
+    outline-offset: -1px;
+    border-color: var(--gold);
+  }
+  .legacy-form-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .legacy-form-actions .btn { flex: 1; }
+
   /* Respect reduced-motion preferences */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -642,6 +717,32 @@
 
   <section id="tab-history">
     <h2>履歴</h2>
+    <div class="legacy-add-wrap">
+      <button class="btn btn-outline" id="legacyAddToggle" type="button">+ 過去の大会を追加</button>
+      <form class="legacy-form" id="legacyAddForm" hidden>
+        <div class="legacy-form-grid">
+          <label>第
+            <input type="number" name="number" min="1" step="1" required>
+            回
+          </label>
+          <label>優勝者
+            <select name="winner" required>
+              <option value="">選択してください</option>
+            </select>
+          </label>
+          <label>日付
+            <input type="date" name="date">
+          </label>
+          <label>会場
+            <input type="text" name="venue" placeholder="(任意)">
+          </label>
+        </div>
+        <div class="legacy-form-actions">
+          <button class="btn" type="submit">追加する</button>
+          <button class="btn btn-outline" type="button" id="legacyAddCancel">キャンセル</button>
+        </div>
+      </form>
+    </div>
     <div id="historyList"></div>
   </section>
 </main>
@@ -654,7 +755,37 @@ const HOLES = 18;
 const STORAGE_KEY = 'golfFamilyData_v2';
 const LEGACY_KEY = 'golfFamilyData_v1';
 
+const LEGACY_SEED = [
+  { number: 1, individualWinner: 'くみこ' },
+  { number: 2, individualWinner: 'のぶき' },
+  { number: 3, individualWinner: 'まさき' },
+  { number: 4, individualWinner: 'まさき' },
+];
+
 let state = loadState();
+seedLegacyWinners();
+
+function seedLegacyWinners() {
+  if (state.legacySeeded) return;
+  for (const entry of LEGACY_SEED) {
+    const alreadyHas = state.history.some(h => h.number === entry.number);
+    if (alreadyHas) continue;
+    state.history.push({
+      id: 'legacy-' + entry.number,
+      number: entry.number,
+      date: '',
+      venue: '',
+      individualWinner: entry.individualWinner,
+      legacy: true,
+      finishedAt: null,
+    });
+  }
+  state.history.sort((a, b) => b.number - a.number);
+  const maxN = state.history.reduce((m, h) => Math.max(m, h.number), 0);
+  if (state.current.number <= maxN) state.current.number = maxN + 1;
+  state.legacySeeded = true;
+  saveState();
+}
 
 function emptyCurrent(number) {
   const today = new Date().toISOString().slice(0, 10);
@@ -785,16 +916,28 @@ function renderHome() {
     gallery.innerHTML = '<div class="home-card"><div class="home-empty">履歴はまだありません。大会を終了すると記録されます。</div></div>';
   } else {
     const recent = state.history.slice(0, 3);
-    gallery.innerHTML = recent.map((h, i) => `
-      <div class="winner-card" style="animation-delay:${i * 90}ms">
-        ${medalHTML(h.number, true)}
-        <div class="info">
-          <div class="title"><span class="trophy">🏆</span> ${h.winnerTeam ? h.winnerTeam + 'チーム 優勝' : '引き分け'}</div>
-          <div class="meta">📅 ${h.date} / 📍 ${h.venue || '会場未設定'}</div>
-          <div class="meta">⭐ MVP: ${h.mvp ? h.mvp + ' (' + h.mvpScore + '打)' : '-'}</div>
-        </div>
-      </div>
-    `).join('');
+    gallery.innerHTML = recent.map((h, i) => {
+      if (h.legacy) {
+        const dateLine = (h.date || h.venue) ? `<div class="meta">📅 ${h.date || '-'} / 📍 ${h.venue || '-'}</div>` : '<div class="meta">(記録のみ)</div>';
+        return `
+          <div class="winner-card" style="animation-delay:${i * 90}ms">
+            ${medalHTML(h.number, true)}
+            <div class="info">
+              <div class="title"><span class="trophy">🏆</span> ${h.individualWinner || '優勝者未設定'} 優勝</div>
+              ${dateLine}
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="winner-card" style="animation-delay:${i * 90}ms">
+          ${medalHTML(h.number, true)}
+          <div class="info">
+            <div class="title"><span class="trophy">🏆</span> ${h.winnerTeam ? h.winnerTeam + 'チーム 優勝' : '引き分け'}</div>
+            <div class="meta">📅 ${h.date} / 📍 ${h.venue || '会場未設定'}</div>
+            <div class="meta">⭐ MVP: ${h.mvp ? h.mvp + ' (' + h.mvpScore + '打)' : '-'}</div>
+          </div>
+        </div>`;
+    }).join('');
   }
 }
 
@@ -978,20 +1121,79 @@ function renderHistory() {
     list.innerHTML = '<div class="history-empty">まだ履歴がありません。大会を終了して履歴に保存するとここに並びます。</div>';
     return;
   }
-  list.innerHTML = state.history.map(h => `
-    <div class="history-item">
-      ${medalHTML(h.number)}
-      <div class="body">
+  list.innerHTML = state.history.map(h => {
+    const dateLine = (h.date || h.venue)
+      ? `<div class="history-meta">📅 ${h.date || '(未設定)'} / 📍 ${h.venue || '(未設定)'}</div>`
+      : '';
+    let body;
+    if (h.legacy) {
+      body = `
+        <h4>
+          <span class="history-winner">${h.individualWinner || '優勝者未設定'} 優勝</span>
+          <span class="trophy">🏆</span>
+          <span class="legacy-badge">記録のみ</span>
+        </h4>
+        ${dateLine}`;
+    } else {
+      body = `
         <h4>
           <span class="history-winner">${h.winnerTeam ? h.winnerTeam + 'チーム 優勝' : '引き分け 🤝'}</span>
           ${h.winnerTeam ? '<span class="trophy">🏆</span>' : ''}
         </h4>
         <div class="history-meta">📅 ${h.date} / 📍 ${h.venue || '会場未設定'}</div>
         <div class="history-meta">A: ${h.totalA} 打 / B: ${h.totalB} 打</div>
-        ${h.mvp ? `<div class="mvp-inline">⭐ MVP: ${h.mvp} (${h.mvpScore}打)</div>` : ''}
+        ${h.mvp ? `<div class="mvp-inline">⭐ MVP: ${h.mvp} (${h.mvpScore}打)</div>` : ''}`;
+    }
+    return `
+      <div class="history-item">
+        ${medalHTML(h.number)}
+        <div class="body">${body}</div>
+        <button class="history-delete" data-id="${h.id}" title="削除" aria-label="削除">×</button>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+  list.querySelectorAll('.history-delete').forEach(btn => {
+    btn.onclick = () => deleteHistory(btn.dataset.id);
+  });
+}
+
+function deleteHistory(id) {
+  const entry = state.history.find(h => h.id === id);
+  if (!entry) return;
+  const label = entry.legacy
+    ? `第${entry.number}回 (${entry.individualWinner || '-'} 優勝)`
+    : `第${entry.number}回`;
+  if (!confirm(`${label} を履歴から削除します。よろしいですか?`)) return;
+  state.history = state.history.filter(h => h.id !== id);
+  saveState();
+  renderHistory();
+  renderHome();
+  haptic(12);
+}
+
+function addLegacyTournament(number, winner, date, venue) {
+  const n = Number(number);
+  if (!Number.isFinite(n) || n <= 0) { alert('第何回か正しい数字を入力してください'); return false; }
+  if (state.history.some(h => h.number === n)) {
+    if (!confirm(`第${n}回は既に履歴にあります。それでも追加しますか?`)) return false;
+  }
+  state.history.push({
+    id: 'legacy-' + n + '-' + Date.now(),
+    number: n,
+    date: date || '',
+    venue: venue || '',
+    individualWinner: winner || '',
+    legacy: true,
+    finishedAt: null,
+  });
+  state.history.sort((a, b) => b.number - a.number);
+  const maxN = state.history.reduce((m, h) => Math.max(m, h.number), 0);
+  if (state.current.number <= maxN) state.current.number = maxN + 1;
+  saveState();
+  renderHistory();
+  renderHome();
+  haptic(14);
+  return true;
 }
 
 function finalizeTournament() {
@@ -1165,6 +1367,39 @@ document.getElementById('resetBtn').onclick = () => {
 };
 
 document.getElementById('finalizeBtn').onclick = finalizeTournament;
+
+(function wireLegacyForm() {
+  const toggle = document.getElementById('legacyAddToggle');
+  const form = document.getElementById('legacyAddForm');
+  const cancel = document.getElementById('legacyAddCancel');
+  const select = form.querySelector('select[name="winner"]');
+  MEMBERS.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    select.appendChild(opt);
+  });
+  const numberInput = form.querySelector('input[name="number"]');
+  function openForm() {
+    const maxN = state.history.reduce((m, h) => Math.max(m, h.number), 0);
+    numberInput.value = maxN + 1;
+    form.hidden = false;
+    toggle.hidden = true;
+    numberInput.focus();
+  }
+  function closeForm() {
+    form.hidden = true;
+    toggle.hidden = false;
+    form.reset();
+  }
+  toggle.onclick = openForm;
+  cancel.onclick = closeForm;
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const ok = addLegacyTournament(fd.get('number'), fd.get('winner'), fd.get('date'), fd.get('venue'));
+    if (ok) closeForm();
+  };
+})();
 
 function renderAll() {
   renderHome();
