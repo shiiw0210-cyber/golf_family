@@ -284,6 +284,125 @@
   .history-meta { color: var(--ink-soft); font-size: 13px; margin-bottom: 6px; }
   .history-winner { font-weight: 700; color: var(--gold); }
   .history-empty { color: #9a8a6a; font-size: 14px; text-align: center; padding: 24px; }
+
+  /* --- Memory elements --- */
+
+  /* 第N回 medal */
+  .number-medal {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fff2a8, var(--gold-bright) 45%, var(--gold) 100%);
+    color: #5a3a00;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 4px 10px rgba(212, 160, 23, 0.4), inset 0 -3px 6px rgba(120, 80, 0, 0.25), inset 0 2px 2px rgba(255,255,255,0.6);
+    border: 2px solid #fff8d0;
+    flex-shrink: 0;
+  }
+  .number-medal .kai-label { font-size: 9px; letter-spacing: 0.08em; opacity: 0.75; }
+  .number-medal .kai-num { font-size: 22px; font-weight: 800; }
+  .number-medal.small { width: 46px; height: 46px; }
+  .number-medal.small .kai-num { font-size: 18px; }
+
+  /* Home current card as a flex row */
+  .current-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  .current-head .title { flex: 1; }
+  .current-head h3 { margin: 0; font-size: 18px; }
+
+  /* Past winners gallery */
+  .winner-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(212,160,23,0.2);
+    margin-bottom: 10px;
+    border-left: 4px solid var(--gold);
+  }
+  .winner-card .info { flex: 1; min-width: 0; }
+  .winner-card .title { font-weight: 800; color: var(--green); font-size: 15px; }
+  .winner-card .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  /* Team winner badge (pill shown on winner team card) */
+  .winner-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #fff2a8, var(--gold-bright) 50%, var(--gold));
+    color: #5a3a00;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    margin-top: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.5);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+  }
+
+  /* MVP card */
+  .mvp-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, #fff7dc, #fbe8a6);
+    border: 2px solid var(--gold);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin: 16px 0 20px;
+    box-shadow: 0 4px 12px rgba(212, 160, 23, 0.22);
+  }
+  .mvp-card .star {
+    font-size: 36px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 3px rgba(212,160,23,0.55));
+    animation: mvpStar 2.4s ease-in-out infinite;
+  }
+  @keyframes mvpStar {
+    0%, 100% { transform: rotate(-6deg) scale(1); }
+    50%      { transform: rotate(6deg) scale(1.1); }
+  }
+  .mvp-card .info { flex: 1; min-width: 0; }
+  .mvp-card .label {
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: #8a6d1a;
+    font-weight: 800;
+  }
+  .mvp-card .name {
+    font-size: 22px;
+    font-weight: 800;
+    color: #5a3a00;
+    margin-top: 2px;
+  }
+  .mvp-card .score {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--green);
+    white-space: nowrap;
+  }
+  .mvp-card .score small {
+    display: block; font-size: 10px; color: var(--ink-soft); font-weight: 500; letter-spacing: 0.12em;
+  }
+
+  /* History item becomes a composite card */
+  .history-item { display: flex; align-items: flex-start; gap: 14px; }
+  .history-item .body { flex: 1; min-width: 0; }
+  .history-item .body h4 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .history-item .mvp-inline {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff7dc;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #5a3a00;
+  }
 </style>
 </head>
 <body>
@@ -306,8 +425,8 @@
       <div class="tagline">家族でつくる、打ち数の記録</div>
     </div>
     <div class="home-card" id="homeCurrent"></div>
-    <h3>前回の優勝</h3>
-    <div class="home-card" id="homeLastWinner"></div>
+    <h3>歴代の優勝</h3>
+    <div id="homeWinnersGallery"></div>
   </section>
 
   <section id="tab-setup">
@@ -345,6 +464,7 @@
     <h3>チーム対抗</h3>
     <div class="team-result" id="teamResult"></div>
     <div class="verdict" id="verdict"></div>
+    <div id="mvpCard"></div>
     <h3>個人ランキング</h3>
     <table class="ranking-table" id="individualTable"></table>
     <div style="margin-top:20px; text-align:center;">
@@ -441,6 +561,10 @@ function updateTotalCell(member) {
   if (cell) cell.textContent = totalOf(member) || '-';
 }
 
+function medalHTML(n, small) {
+  return `<div class="number-medal ${small ? 'small' : ''}"><span class="kai-label">第</span><span class="kai-num">${n}</span><span class="kai-label">回</span></div>`;
+}
+
 function renderHome() {
   const cur = state.current;
   const el = document.getElementById('homeCurrent');
@@ -448,23 +572,32 @@ function renderHome() {
   const bCount = MEMBERS.filter(m => cur.teams[m] === 'B').length;
   const anyScore = MEMBERS.some(m => holesDone(m) > 0);
   el.innerHTML = `
-    <h3>第${cur.number}回 開催中</h3>
-    <div class="home-meta">📅 ${cur.date || '(日付未設定)'}</div>
-    <div class="home-meta">📍 ${cur.venue || '(会場未設定)'}</div>
+    <div class="current-head">
+      ${medalHTML(cur.number)}
+      <div class="title">
+        <h3>開催中の大会</h3>
+        <div class="home-meta">📅 ${cur.date || '(日付未設定)'} / 📍 ${cur.venue || '(会場未設定)'}</div>
+      </div>
+    </div>
     <div class="home-meta">👥 A ${aCount}人 / B ${bCount}人</div>
     <div class="home-meta">⛳ ${anyScore ? 'スコア入力中' : '未開始'}</div>
   `;
 
-  const last = state.history[0];
-  const lw = document.getElementById('homeLastWinner');
-  if (!last) {
-    lw.innerHTML = '<div class="home-empty">履歴はまだありません。大会を終了すると記録されます。</div>';
+  const gallery = document.getElementById('homeWinnersGallery');
+  if (!state.history.length) {
+    gallery.innerHTML = '<div class="home-card"><div class="home-empty">履歴はまだありません。大会を終了すると記録されます。</div></div>';
   } else {
-    lw.innerHTML = `
-      <h3><span class="trophy">🏆</span> 第${last.number}回 ${last.winnerTeam ? last.winnerTeam + 'チーム 優勝' : '引き分け'}</h3>
-      <div class="home-meta">📅 ${last.date} / 📍 ${last.venue || '会場未設定'}</div>
-      <div class="home-meta">MVP: ${last.mvp ? last.mvp + ' (' + last.mvpScore + '打)' : '-'}</div>
-    `;
+    const recent = state.history.slice(0, 3);
+    gallery.innerHTML = recent.map(h => `
+      <div class="winner-card">
+        ${medalHTML(h.number, true)}
+        <div class="info">
+          <div class="title"><span class="trophy">🏆</span> ${h.winnerTeam ? h.winnerTeam + 'チーム 優勝' : '引き分け'}</div>
+          <div class="meta">📅 ${h.date} / 📍 ${h.venue || '会場未設定'}</div>
+          <div class="meta">⭐ MVP: ${h.mvp ? h.mvp + ' (' + h.mvpScore + '打)' : '-'}</div>
+        </div>
+      </div>
+    `).join('');
   }
 }
 
@@ -549,11 +682,13 @@ function renderRanking() {
       <h4>A チーム (${aMembers.length}人)</h4>
       <div class="members">${aMembers.join(' / ') || '未設定'}</div>
       <div class="score">${aTotal || '-'}</div>
+      ${aWin ? '<div class="winner-badge">WINNER 優勝</div>' : ''}
     </div>
     <div class="bg-B ${bWin ? 'winner' : ''}">
       <h4>B チーム (${bMembers.length}人)</h4>
       <div class="members">${bMembers.join(' / ') || '未設定'}</div>
       <div class="score">${bTotal || '-'}</div>
+      ${bWin ? '<div class="winner-badge">WINNER 優勝</div>' : ''}
     </div>`;
   if (!hasAny) {
     verdict.textContent = 'スコアを入力すると結果が表示されます';
@@ -575,6 +710,23 @@ function renderRanking() {
     .map(m => ({ name: m, team: state.current.teams[m], total: totalOf(m), holes: holesDone(m) }))
     .filter(x => x.holes > 0)
     .sort((a, b) => a.total - b.total);
+
+  const mvpEl = document.getElementById('mvpCard');
+  if (ranked.length > 0) {
+    const mvp = ranked[0];
+    mvpEl.innerHTML = `
+      <div class="mvp-card">
+        <span class="star">⭐</span>
+        <div class="info">
+          <div class="label">MVP</div>
+          <div class="name">${mvp.name}</div>
+        </div>
+        <div class="score">${mvp.total}<small>${mvp.holes}/${HOLES} ホール</small></div>
+      </div>`;
+  } else {
+    mvpEl.innerHTML = '';
+  }
+
   const tbl = document.getElementById('individualTable');
   if (ranked.length === 0) {
     tbl.innerHTML = '<tr><td style="padding:16px;color:#888">スコアを入力するとランキングが表示されます</td></tr>';
@@ -598,10 +750,16 @@ function renderHistory() {
   }
   list.innerHTML = state.history.map(h => `
     <div class="history-item">
-      <h4>第${h.number}回 <span class="history-winner">${h.winnerTeam ? h.winnerTeam + 'チーム 優勝 ' : '引き分け 🤝'}${h.winnerTeam ? '<span class="trophy">🏆</span>' : ''}</span></h4>
-      <div class="history-meta">📅 ${h.date} / 📍 ${h.venue || '会場未設定'}</div>
-      <div class="history-meta">A: ${h.totalA} 打 / B: ${h.totalB} 打</div>
-      <div class="history-meta">MVP: ${h.mvp ? h.mvp + ' (' + h.mvpScore + '打)' : '-'}</div>
+      ${medalHTML(h.number)}
+      <div class="body">
+        <h4>
+          <span class="history-winner">${h.winnerTeam ? h.winnerTeam + 'チーム 優勝' : '引き分け 🤝'}</span>
+          ${h.winnerTeam ? '<span class="trophy">🏆</span>' : ''}
+        </h4>
+        <div class="history-meta">📅 ${h.date} / 📍 ${h.venue || '会場未設定'}</div>
+        <div class="history-meta">A: ${h.totalA} 打 / B: ${h.totalB} 打</div>
+        ${h.mvp ? `<div class="mvp-inline">⭐ MVP: ${h.mvp} (${h.mvpScore}打)</div>` : ''}
+      </div>
     </div>
   `).join('');
 }
