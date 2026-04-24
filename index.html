@@ -10,11 +10,52 @@
   header { background: #2d5016; color: #fff; padding: 16px; }
   header h1 { margin: 0 0 12px; font-size: 20px; }
   nav { display: flex; gap: 6px; flex-wrap: wrap; }
-  nav button { background: rgba(255,255,255,0.15); color: #fff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+  nav button { background: rgba(255,255,255,0.15); color: #fff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.2s ease, color 0.2s ease, transform 0.08s ease; }
+  nav button:hover { background: rgba(255,255,255,0.28); }
+  nav button:active { transform: scale(0.94); }
   nav button.active { background: #fff; color: #2d5016; font-weight: bold; }
   main { padding: 16px; max-width: 960px; margin: 0 auto; }
   section { display: none; }
-  section.active { display: block; }
+  section.active { display: block; animation: tabFade 0.35s ease both; }
+  @keyframes tabFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Press feedback for all clickable controls */
+  button { transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.08s ease; }
+  button:active { transform: scale(0.96); }
+
+  /* Floating effect for the home hero */
+  .home-hero { text-align: center; margin: 4px 0 18px; }
+  .home-hero .ball {
+    display: inline-block; font-size: 52px; line-height: 1;
+    animation: floatY 3.2s ease-in-out infinite;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+  }
+  .home-hero .tagline { margin-top: 6px; color: #4a5c2a; font-size: 14px; letter-spacing: 0.05em; }
+  @keyframes floatY {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50%      { transform: translateY(-10px) rotate(4deg); }
+  }
+
+  /* Trophy bounce for winner indicators */
+  .trophy {
+    display: inline-block;
+    animation: trophyBounce 1.2s ease-in-out infinite;
+    transform-origin: 50% 80%;
+  }
+  @keyframes trophyBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    30%      { transform: translateY(-6px) scale(1.08); }
+    60%      { transform: translateY(0) scale(0.98); }
+  }
+
+  /* Confetti canvas overlay */
+  #confettiCanvas {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 9999; display: none;
+  }
   h2 { margin-top: 0; font-size: 18px; }
   h3 { margin: 24px 0 8px; font-size: 15px; color: #444; }
   .note { background: #fff8dc; padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; border-left: 4px solid #d4a017; }
@@ -97,7 +138,10 @@
 
 <main>
   <section id="tab-home" class="active">
-    <h2>ホーム</h2>
+    <div class="home-hero">
+      <span class="ball" aria-hidden="true">⛳</span>
+      <div class="tagline">家族でつくる、打ち数の記録</div>
+    </div>
     <div class="home-card" id="homeCurrent"></div>
     <h3>前回の優勝</h3>
     <div class="home-card" id="homeLastWinner"></div>
@@ -150,6 +194,8 @@
     <div id="historyList"></div>
   </section>
 </main>
+
+<canvas id="confettiCanvas"></canvas>
 
 <script>
 const MEMBERS = ['まさき', 'くみこ', 'かずき', 'だいき', 'のぶき', 'りこ', 'しいか'];
@@ -252,7 +298,7 @@ function renderHome() {
     lw.innerHTML = '<div class="home-empty">履歴はまだありません。大会を終了すると記録されます。</div>';
   } else {
     lw.innerHTML = `
-      <h3>🏆 第${last.number}回 ${last.winnerTeam ? last.winnerTeam + 'チーム 優勝' : '引き分け'}</h3>
+      <h3><span class="trophy">🏆</span> 第${last.number}回 ${last.winnerTeam ? last.winnerTeam + 'チーム 優勝' : '引き分け'}</h3>
       <div class="home-meta">📅 ${last.date} / 📍 ${last.venue || '会場未設定'}</div>
       <div class="home-meta">MVP: ${last.mvp ? last.mvp + ' (' + last.mvpScore + '打)' : '-'}</div>
     `;
@@ -358,7 +404,7 @@ function renderRanking() {
   } else {
     const winner = aWin ? 'A' : 'B';
     const diff = Math.abs(aTotal - bTotal);
-    verdict.textContent = `🏆 ${winner} チームが ${diff} 打リード (合計打数が少ない方が勝ち)`;
+    verdict.innerHTML = `<span class="trophy">🏆</span> ${winner} チームが ${diff} 打リード (合計打数が少ない方が勝ち)`;
     verdict.style.color = aWin ? '#1e40af' : '#b91c1c';
   }
 
@@ -389,7 +435,7 @@ function renderHistory() {
   }
   list.innerHTML = state.history.map(h => `
     <div class="history-item">
-      <h4>第${h.number}回 <span class="history-winner">${h.winnerTeam ? h.winnerTeam + 'チーム 優勝 🏆' : '引き分け 🤝'}</span></h4>
+      <h4>第${h.number}回 <span class="history-winner">${h.winnerTeam ? h.winnerTeam + 'チーム 優勝 ' : '引き分け 🤝'}${h.winnerTeam ? '<span class="trophy">🏆</span>' : ''}</span></h4>
       <div class="history-meta">📅 ${h.date} / 📍 ${h.venue || '会場未設定'}</div>
       <div class="history-meta">A: ${h.totalA} 打 / B: ${h.totalB} 打</div>
       <div class="history-meta">MVP: ${h.mvp ? h.mvp + ' (' + h.mvpScore + '打)' : '-'}</div>
@@ -436,14 +482,99 @@ function finalizeTournament() {
   state.current = emptyCurrent(cur.number + 1);
   saveState();
   renderAll();
+  if (winnerTeam) confetti.fire();
   switchTab('history');
-  alert(`第${record.number}回大会を履歴に保存しました。`);
+  setTimeout(() => {
+    alert(`第${record.number}回大会を履歴に保存しました。`);
+  }, 50);
 }
 
 function switchTab(name) {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  document.querySelectorAll('section').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
+  document.querySelectorAll('section').forEach(s => {
+    const shouldShow = s.id === 'tab-' + name;
+    if (shouldShow) {
+      s.classList.remove('active');
+      void s.offsetWidth; // force reflow so fade animation replays
+      s.classList.add('active');
+    } else {
+      s.classList.remove('active');
+    }
+  });
 }
+
+/* ---------- Confetti ---------- */
+const confetti = (() => {
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  const COLORS = ['#ffd700', '#f5c048', '#d4a017', '#3b82f6', '#ef4444', '#2d5016', '#fff'];
+  let pieces = [];
+  let raf = null;
+  let running = false;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function spawn(count) {
+    const W = canvas.width;
+    for (let i = 0; i < count; i++) {
+      pieces.push({
+        x: Math.random() * W,
+        y: -20 - Math.random() * 200,
+        w: 6 + Math.random() * 6,
+        h: 8 + Math.random() * 8,
+        vx: -2 + Math.random() * 4,
+        vy: 2 + Math.random() * 4,
+        rot: Math.random() * Math.PI * 2,
+        vr: -0.2 + Math.random() * 0.4,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        life: 260 + Math.random() * 160,
+      });
+    }
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.rot += p.vr;
+      p.life -= 1;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    pieces = pieces.filter(p => p.life > 0 && p.y < canvas.height + 40);
+    if (pieces.length > 0) {
+      raf = requestAnimationFrame(tick);
+    } else {
+      running = false;
+      canvas.style.display = 'none';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  function fire() {
+    resize();
+    canvas.style.display = 'block';
+    spawn(120);
+    setTimeout(() => spawn(80), 250);
+    setTimeout(() => spawn(60), 550);
+    if (!running) {
+      running = true;
+      raf = requestAnimationFrame(tick);
+    }
+  }
+
+  window.addEventListener('resize', () => { if (running) resize(); });
+  return { fire };
+})();
 
 document.querySelectorAll('nav button').forEach(btn => {
   btn.onclick = () => switchTab(btn.dataset.tab);
