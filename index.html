@@ -567,21 +567,40 @@
     margin-left: 4px;
   }
   .history-item { position: relative; }
-  .history-delete {
+  .history-actions {
     position: absolute;
     top: 8px; right: 8px;
+    display: flex;
+    gap: 4px;
+  }
+  .history-edit, .history-delete {
     width: 28px; height: 28px;
     border-radius: 50%;
     border: 1px solid rgba(0,0,0,0.1);
     background: #fffdf5;
     color: #9a8a6a;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     line-height: 1;
     cursor: pointer;
     font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
   }
+  .history-edit:hover { background: #fff4c8; color: var(--gold); border-color: var(--gold-light); }
+  .history-delete { font-size: 16px; }
   .history-delete:hover { background: #ffe5e5; color: #c62828; border-color: #f3bbbb; }
+  .history-editing { background: #fffef4; border: 1px dashed var(--gold); }
+  .history-edit-form { flex: 1; min-width: 0; }
+  .history-edit-title {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
 
   /* Legacy add form */
   .legacy-add-wrap { margin-bottom: 16px; }
@@ -735,6 +754,9 @@
           </label>
           <label>会場
             <input type="text" name="venue" placeholder="(任意)">
+          </label>
+          <label>優勝スコア(打数)
+            <input type="number" name="winnerScore" min="1" step="1" placeholder="(任意)">
           </label>
         </div>
         <div class="legacy-form-actions">
@@ -1122,14 +1144,19 @@ function renderHistory() {
     return;
   }
   list.innerHTML = state.history.map(h => {
+    const isEditing = h.id === _editingHistoryId;
+    if (isEditing) {
+      return renderHistoryEditForm(h);
+    }
     const dateLine = (h.date || h.venue)
       ? `<div class="history-meta">📅 ${h.date || '(未設定)'} / 📍 ${h.venue || '(未設定)'}</div>`
       : '';
     let body;
     if (h.legacy) {
+      const scoreSuffix = h.winnerScore ? ` (${h.winnerScore}打)` : '';
       body = `
         <h4>
-          <span class="history-winner">${h.individualWinner || '優勝者未設定'} 優勝</span>
+          <span class="history-winner">${h.individualWinner || '優勝者未設定'} 優勝${scoreSuffix}</span>
           <span class="trophy">🏆</span>
           <span class="legacy-badge">記録のみ</span>
         </h4>
@@ -1148,13 +1175,82 @@ function renderHistory() {
       <div class="history-item">
         ${medalHTML(h.number)}
         <div class="body">${body}</div>
-        <button class="history-delete" data-id="${h.id}" title="削除" aria-label="削除">×</button>
+        <div class="history-actions">
+          <button class="history-edit" data-id="${h.id}" title="編集" aria-label="編集">✎</button>
+          <button class="history-delete" data-id="${h.id}" title="削除" aria-label="削除">×</button>
+        </div>
       </div>
     `;
   }).join('');
   list.querySelectorAll('.history-delete').forEach(btn => {
     btn.onclick = () => deleteHistory(btn.dataset.id);
   });
+  list.querySelectorAll('.history-edit').forEach(btn => {
+    btn.onclick = () => beginEditHistory(btn.dataset.id);
+  });
+  const editForm = document.getElementById('editHistoryForm');
+  if (editForm) {
+    const cancelBtn = editForm.querySelector('[data-action="cancel"]');
+    if (cancelBtn) cancelBtn.onclick = cancelEditHistory;
+    editForm.onsubmit = (e) => {
+      e.preventDefault();
+      const fd = new FormData(editForm);
+      const patch = {
+        date: fd.get('date'),
+        venue: fd.get('venue'),
+      };
+      const entry = state.history.find(h => h.id === _editingHistoryId);
+      if (entry && entry.legacy) {
+        patch.number = fd.get('number');
+        patch.individualWinner = fd.get('winner');
+        patch.winnerScore = fd.get('winnerScore');
+      }
+      saveEditHistory(_editingHistoryId, patch);
+    };
+  }
+}
+
+function renderHistoryEditForm(h) {
+  const memberOptions = MEMBERS.map(m => `<option value="${m}" ${h.individualWinner === m ? 'selected' : ''}>${m}</option>`).join('');
+  const numberField = h.legacy ? `
+    <label>第
+      <input type="number" name="number" min="1" step="1" value="${h.number}" required>
+      回
+    </label>` : '';
+  const winnerField = h.legacy ? `
+    <label>優勝者
+      <select name="winner" required>
+        <option value="">選択してください</option>
+        ${memberOptions}
+      </select>
+    </label>` : '';
+  const scoreField = h.legacy ? `
+    <label>優勝スコア(打数)
+      <input type="number" name="winnerScore" min="1" step="1" value="${h.winnerScore || ''}" placeholder="(任意)">
+    </label>` : '';
+  return `
+    <div class="history-item history-editing">
+      ${medalHTML(h.number)}
+      <form class="history-edit-form" id="editHistoryForm">
+        <div class="history-edit-title">第${h.number}回を編集</div>
+        <div class="legacy-form-grid">
+          ${numberField}
+          ${winnerField}
+          <label>日付
+            <input type="date" name="date" value="${h.date || ''}">
+          </label>
+          <label>会場
+            <input type="text" name="venue" value="${(h.venue || '').replace(/"/g, '&quot;')}" placeholder="(任意)">
+          </label>
+          ${scoreField}
+        </div>
+        <div class="legacy-form-actions">
+          <button class="btn" type="submit">保存</button>
+          <button class="btn btn-outline" type="button" data-action="cancel">キャンセル</button>
+        </div>
+      </form>
+    </div>
+  `;
 }
 
 function deleteHistory(id) {
@@ -1171,18 +1267,20 @@ function deleteHistory(id) {
   haptic(12);
 }
 
-function addLegacyTournament(number, winner, date, venue) {
+function addLegacyTournament(number, winner, date, venue, winnerScore) {
   const n = Number(number);
   if (!Number.isFinite(n) || n <= 0) { alert('第何回か正しい数字を入力してください'); return false; }
   if (state.history.some(h => h.number === n)) {
     if (!confirm(`第${n}回は既に履歴にあります。それでも追加しますか?`)) return false;
   }
+  const score = winnerScore ? Number(winnerScore) : null;
   state.history.push({
     id: 'legacy-' + n + '-' + Date.now(),
     number: n,
     date: date || '',
     venue: venue || '',
     individualWinner: winner || '',
+    winnerScore: Number.isFinite(score) && score > 0 ? score : null,
     legacy: true,
     finishedAt: null,
   });
@@ -1194,6 +1292,50 @@ function addLegacyTournament(number, winner, date, venue) {
   renderHome();
   haptic(14);
   return true;
+}
+
+let _editingHistoryId = null;
+
+function beginEditHistory(id) {
+  _editingHistoryId = id;
+  renderHistory();
+  setTimeout(() => {
+    const f = document.getElementById('editHistoryForm');
+    if (f) {
+      const first = f.querySelector('input, select');
+      if (first) first.focus();
+    }
+  }, 0);
+}
+
+function cancelEditHistory() {
+  _editingHistoryId = null;
+  renderHistory();
+}
+
+function saveEditHistory(id, patch) {
+  const entry = state.history.find(h => h.id === id);
+  if (!entry) return;
+  if (patch.number != null) {
+    const n = Number(patch.number);
+    if (!Number.isFinite(n) || n <= 0) { alert('第何回か正しい数字を入力してください'); return; }
+    entry.number = n;
+  }
+  if ('individualWinner' in patch) entry.individualWinner = patch.individualWinner || '';
+  if ('date' in patch) entry.date = patch.date || '';
+  if ('venue' in patch) entry.venue = patch.venue || '';
+  if ('winnerScore' in patch) {
+    const score = patch.winnerScore ? Number(patch.winnerScore) : null;
+    entry.winnerScore = Number.isFinite(score) && score > 0 ? score : null;
+  }
+  state.history.sort((a, b) => b.number - a.number);
+  const maxN = state.history.reduce((m, h) => Math.max(m, h.number), 0);
+  if (state.current.number <= maxN) state.current.number = maxN + 1;
+  _editingHistoryId = null;
+  saveState();
+  renderHistory();
+  renderHome();
+  haptic(14);
 }
 
 function finalizeTournament() {
@@ -1396,7 +1538,13 @@ document.getElementById('finalizeBtn').onclick = finalizeTournament;
   form.onsubmit = (e) => {
     e.preventDefault();
     const fd = new FormData(form);
-    const ok = addLegacyTournament(fd.get('number'), fd.get('winner'), fd.get('date'), fd.get('venue'));
+    const ok = addLegacyTournament(
+      fd.get('number'),
+      fd.get('winner'),
+      fd.get('date'),
+      fd.get('venue'),
+      fd.get('winnerScore')
+    );
     if (ok) closeForm();
   };
 })();
