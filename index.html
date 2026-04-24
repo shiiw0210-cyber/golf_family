@@ -435,6 +435,135 @@
     font-weight: 700;
     color: #5a3a00;
   }
+
+  /* ============================================================
+     Dynamic UX layer
+     ============================================================ */
+
+  /* Tab slide animations (direction aware). Tabs keep tabFade as a fallback */
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(28px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-28px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  section.active.slide-right { animation: slideInRight 0.35s cubic-bezier(.2,.8,.2,1) both; }
+  section.active.slide-left  { animation: slideInLeft  0.35s cubic-bezier(.2,.8,.2,1) both; }
+
+  /* Nav relative positioning + sliding indicator */
+  nav { position: relative; }
+  .nav-indicator {
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    height: 3px;
+    width: 0;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold-bright));
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.65);
+    transition: transform 0.32s cubic-bezier(.2,.8,.2,1), width 0.32s cubic-bezier(.2,.8,.2,1);
+    pointer-events: none;
+  }
+
+  /* Ripple effect for tactile buttons */
+  .btn, .btn-danger, .team-buttons button, nav button { position: relative; overflow: hidden; }
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0);
+    background: radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 70%);
+    animation: rippleOut 0.55s ease-out forwards;
+  }
+  .team-buttons button .ripple { background: radial-gradient(circle, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0) 70%); }
+  @keyframes rippleOut {
+    to { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+  }
+
+  /* Score cell flash + nice-pop */
+  table.scores td.total { position: relative; transition: background 0.25s ease; }
+  table.scores td.total.cell-flash { animation: cellFlash 0.65s ease; }
+  @keyframes cellFlash {
+    0%   { background: #fff1b0; transform: scale(1.0); box-shadow: inset 0 0 0 2px var(--gold); }
+    40%  { background: var(--gold-bright); transform: scale(1.08); box-shadow: inset 0 0 0 2px var(--gold); }
+    100% { background: #fbf3d8; transform: scale(1); box-shadow: none; }
+  }
+  table.scores td.has-input { position: relative; }
+  .nice-pop {
+    position: absolute;
+    left: 50%; top: -6px;
+    transform: translate(-50%, 0);
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    color: #5a3a00;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    animation: nicePop 1.1s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  @keyframes nicePop {
+    0%   { opacity: 0; transform: translate(-50%, 4px) scale(0.8); }
+    20%  { opacity: 1; transform: translate(-50%, -18px) scale(1.05); }
+    80%  { opacity: 1; transform: translate(-50%, -34px) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -52px) scale(0.95); }
+  }
+
+  /* Ranking FLIP rows need position for safe transforms */
+  .ranking-table tr { will-change: transform; }
+
+  /* Team winner enter pulse (once) */
+  .winner-enter { animation: winnerPulse 1.4s ease-out; }
+  @keyframes winnerPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.85), var(--card-shadow-lg); transform: scale(1); }
+    25%  { box-shadow: 0 0 0 14px rgba(255, 215, 0, 0), var(--card-shadow-lg); transform: scale(1.04); }
+    60%  { transform: scale(0.995); }
+    100% { transform: scale(1); }
+  }
+
+  /* MVP card enter */
+  .mvp-card.mvp-enter { animation: mvpEnter 0.5s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes mvpEnter {
+    from { opacity: 0; transform: scale(0.86) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Verdict crossfade */
+  #verdict.verdict-change { animation: verdictFade 0.45s ease; }
+  @keyframes verdictFade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Home: winner cards staggered rise + medal pop */
+  .winner-card { animation: cardRise 0.55s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes cardRise {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .number-medal { animation: medalPop 0.55s cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes medalPop {
+    0%   { opacity: 0; transform: scale(0.5); }
+    60%  { opacity: 1; transform: scale(1.12); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Respect reduced-motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    .home-hero .ball, .trophy, .mvp-card .star { animation: none !important; }
+    .nav-indicator { transition: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -447,6 +576,7 @@
     <button data-tab="scores">スコア</button>
     <button data-tab="ranking">順位</button>
     <button data-tab="history">履歴</button>
+    <span class="nav-indicator" id="navIndicator"></span>
   </nav>
 </header>
 
@@ -582,21 +712,50 @@ function setTeam(member, team) {
 }
 
 function setScore(member, holeIndex, raw) {
+  const prev = state.current.scores[member][holeIndex];
+  let next;
   if (raw === '' || raw == null) {
-    state.current.scores[member][holeIndex] = null;
+    next = null;
   } else {
     const n = Number(raw);
-    state.current.scores[member][holeIndex] = Number.isFinite(n) && n > 0 ? n : null;
+    next = Number.isFinite(n) && n > 0 ? n : null;
   }
+  state.current.scores[member][holeIndex] = next;
   saveState();
-  updateTotalCell(member);
+  updateTotalCell(member, prev, next, holeIndex);
   renderRanking();
   renderHome();
 }
 
-function updateTotalCell(member) {
+function updateTotalCell(member, prevVal, nextVal, holeIndex) {
   const cell = document.getElementById('total-' + member);
-  if (cell) cell.textContent = totalOf(member) || '-';
+  if (!cell) return;
+  const from = Number(cell.dataset.total || 0);
+  const to = totalOf(member);
+  if (from !== to) {
+    countUp(cell, from, to, 320);
+    cell.dataset.total = String(to);
+    cell.classList.remove('cell-flash');
+    void cell.offsetWidth;
+    cell.classList.add('cell-flash');
+    setTimeout(() => cell.classList.remove('cell-flash'), 700);
+    haptic(10);
+  } else {
+    cell.textContent = to || '-';
+  }
+  // Nice-pop for eagles / hole-in-ones (when the new input is 1 or 2, not on clear)
+  if (nextVal && (nextVal === 1 || nextVal === 2) && nextVal !== prevVal) {
+    const input = document.querySelector(`table.scores input[data-m="${CSS.escape(member)}"][data-h="${holeIndex}"]`);
+    const td = input ? input.parentElement : null;
+    if (td) {
+      td.classList.add('has-input');
+      const pop = document.createElement('span');
+      pop.className = 'nice-pop';
+      pop.textContent = nextVal === 1 ? 'ホールインワン🎯' : 'ナイス!';
+      td.appendChild(pop);
+      setTimeout(() => pop.remove(), 1200);
+    }
+  }
 }
 
 function medalHTML(n, small) {
@@ -626,8 +785,8 @@ function renderHome() {
     gallery.innerHTML = '<div class="home-card"><div class="home-empty">履歴はまだありません。大会を終了すると記録されます。</div></div>';
   } else {
     const recent = state.history.slice(0, 3);
-    gallery.innerHTML = recent.map(h => `
-      <div class="winner-card">
+    gallery.innerHTML = recent.map((h, i) => `
+      <div class="winner-card" style="animation-delay:${i * 90}ms">
         ${medalHTML(h.number, true)}
         <div class="info">
           <div class="title"><span class="trophy">🏆</span> ${h.winnerTeam ? h.winnerTeam + 'チーム 優勝' : '引き分け'}</div>
@@ -686,7 +845,7 @@ function renderScoreTable() {
       const v = state.current.scores[m][h];
       html += `<td><input type="number" inputmode="numeric" min="1" max="20" value="${v ?? ''}" data-m="${m}" data-h="${h}"></td>`;
     }
-    html += `<td class="total" id="total-${m}">${totalOf(m) || '-'}</td></tr>`;
+    html += `<td class="total" id="total-${m}" data-total="${totalOf(m)}">${totalOf(m) || '-'}</td></tr>`;
   });
   html += '</tbody>';
   table.innerHTML = html;
@@ -707,6 +866,8 @@ function computeTotals() {
   return { aTotal, bTotal, aMembers, bMembers };
 }
 
+const _prev = { aTotal: 0, bTotal: 0, aWin: false, bWin: false, verdict: '', mvp: null };
+
 function renderRanking() {
   const teamResult = document.getElementById('teamResult');
   const verdict = document.getElementById('verdict');
@@ -715,33 +876,51 @@ function renderRanking() {
   const bothStarted = aTotal > 0 && bTotal > 0;
   const aWin = bothStarted && aTotal < bTotal;
   const bWin = bothStarted && bTotal < aTotal;
+  const aEntered = !_prev.aWin && aWin;
+  const bEntered = !_prev.bWin && bWin;
   teamResult.innerHTML = `
-    <div class="bg-A ${aWin ? 'winner' : ''}">
+    <div class="bg-A ${aWin ? 'winner' : ''} ${aEntered ? 'winner-enter' : ''}">
       <h4>A チーム (${aMembers.length}人)</h4>
       <div class="members">${aMembers.join(' / ') || '未設定'}</div>
-      <div class="score">${aTotal || '-'}</div>
+      <div class="score" data-team="A">0</div>
       ${aWin ? '<div class="winner-badge">WINNER 優勝</div>' : ''}
     </div>
-    <div class="bg-B ${bWin ? 'winner' : ''}">
+    <div class="bg-B ${bWin ? 'winner' : ''} ${bEntered ? 'winner-enter' : ''}">
       <h4>B チーム (${bMembers.length}人)</h4>
       <div class="members">${bMembers.join(' / ') || '未設定'}</div>
-      <div class="score">${bTotal || '-'}</div>
+      <div class="score" data-team="B">0</div>
       ${bWin ? '<div class="winner-badge">WINNER 優勝</div>' : ''}
     </div>`;
+  const aScoreEl = teamResult.querySelector('[data-team="A"]');
+  const bScoreEl = teamResult.querySelector('[data-team="B"]');
+  if (aScoreEl) countUp(aScoreEl, _prev.aTotal, aTotal, 420);
+  if (bScoreEl) countUp(bScoreEl, _prev.bTotal, bTotal, 420);
+
+  let verdictText;
   if (!hasAny) {
-    verdict.textContent = 'スコアを入力すると結果が表示されます';
+    verdictText = 'スコアを入力すると結果が表示されます';
     verdict.style.color = '#888';
   } else if (!bothStarted) {
-    verdict.textContent = '両チームのスコアが入ると勝敗が出ます';
+    verdictText = '両チームのスコアが入ると勝敗が出ます';
     verdict.style.color = '#888';
   } else if (aTotal === bTotal) {
-    verdict.textContent = '🤝 現在タイ';
+    verdictText = '🤝 現在タイ';
     verdict.style.color = '#555';
   } else {
     const winner = aWin ? 'A' : 'B';
     const diff = Math.abs(aTotal - bTotal);
-    verdict.innerHTML = `<span class="trophy">🏆</span> ${winner} チームが ${diff} 打リード (合計打数が少ない方が勝ち)`;
+    verdictText = `__TROPHY__ ${winner} チームが ${diff} 打リード (合計打数が少ない方が勝ち)`;
     verdict.style.color = aWin ? '#1e40af' : '#b91c1c';
+  }
+  if (verdictText !== _prev.verdict) {
+    if (verdictText.startsWith('__TROPHY__')) {
+      verdict.innerHTML = '<span class="trophy">🏆</span>' + verdictText.slice('__TROPHY__'.length);
+    } else {
+      verdict.textContent = verdictText;
+    }
+    verdict.classList.remove('verdict-change');
+    void verdict.offsetWidth;
+    verdict.classList.add('verdict-change');
   }
 
   const ranked = MEMBERS
@@ -752,8 +931,9 @@ function renderRanking() {
   const mvpEl = document.getElementById('mvpCard');
   if (ranked.length > 0) {
     const mvp = ranked[0];
+    const isNew = _prev.mvp !== mvp.name;
     mvpEl.innerHTML = `
-      <div class="mvp-card">
+      <div class="mvp-card ${isNew ? 'mvp-enter' : ''}">
         <span class="star">⭐</span>
         <div class="info">
           <div class="label">MVP</div>
@@ -761,23 +941,35 @@ function renderRanking() {
         </div>
         <div class="score">${mvp.total}<small>${mvp.holes}/${HOLES} ホール</small></div>
       </div>`;
+    _prev.mvp = mvp.name;
   } else {
     mvpEl.innerHTML = '';
+    _prev.mvp = null;
   }
 
   const tbl = document.getElementById('individualTable');
   if (ranked.length === 0) {
     tbl.innerHTML = '<tr><td style="padding:16px;color:#888">スコアを入力するとランキングが表示されます</td></tr>';
+    _prev.aTotal = aTotal; _prev.bTotal = bTotal;
+    _prev.aWin = aWin; _prev.bWin = bWin;
+    _prev.verdict = verdictText;
     return;
   }
-  let html = '<thead><tr><th class="rank">#</th><th>名前</th><th>チーム</th><th>スコア</th><th>消化</th></tr></thead><tbody>';
-  ranked.forEach((r, i) => {
-    const teamLabel = r.team ? `${r.team}チーム` : '-';
-    const cls = i === 0 ? 'top1' : '';
-    html += `<tr class="${cls}"><td class="rank">${i + 1}</td><td>${r.name}</td><td>${teamLabel}</td><td>${r.total}</td><td>${r.holes}/${HOLES}</td></tr>`;
+
+  flipRows(tbl, 'tr[data-key]', () => {
+    let html = '<thead><tr><th class="rank">#</th><th>名前</th><th>チーム</th><th>スコア</th><th>消化</th></tr></thead><tbody>';
+    ranked.forEach((r, i) => {
+      const teamLabel = r.team ? `${r.team}チーム` : '-';
+      const cls = i === 0 ? 'top1' : '';
+      html += `<tr class="${cls}" data-key="${r.name}"><td class="rank">${i + 1}</td><td>${r.name}</td><td>${teamLabel}</td><td>${r.total}</td><td>${r.holes}/${HOLES}</td></tr>`;
+    });
+    html += '</tbody>';
+    tbl.innerHTML = html;
   });
-  html += '</tbody>';
-  tbl.innerHTML = html;
+
+  _prev.aTotal = aTotal; _prev.bTotal = bTotal;
+  _prev.aWin = aWin; _prev.bWin = bWin;
+  _prev.verdict = verdictText;
 }
 
 function renderHistory() {
@@ -848,19 +1040,42 @@ function finalizeTournament() {
   }, 50);
 }
 
+const TAB_ORDER = ['home', 'setup', 'scores', 'ranking', 'history'];
+let currentTab = 'home';
+
 function switchTab(name) {
+  if (!TAB_ORDER.includes(name)) return;
+  const fromIdx = TAB_ORDER.indexOf(currentTab);
+  const toIdx = TAB_ORDER.indexOf(name);
+  const dir = toIdx > fromIdx ? 'slide-right' : (toIdx < fromIdx ? 'slide-left' : null);
+  currentTab = name;
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('section').forEach(s => {
-    const shouldShow = s.id === 'tab-' + name;
-    if (shouldShow) {
-      s.classList.remove('active');
-      void s.offsetWidth; // force reflow so fade animation replays
+    s.classList.remove('active', 'slide-right', 'slide-left');
+    if (s.id === 'tab-' + name) {
+      void s.offsetWidth;
       s.classList.add('active');
-    } else {
-      s.classList.remove('active');
+      if (dir) s.classList.add(dir);
     }
   });
+  updateNavIndicator();
+  haptic(8);
 }
+
+function updateNavIndicator() {
+  const nav = document.querySelector('nav');
+  const ind = document.getElementById('navIndicator');
+  if (!nav || !ind) return;
+  const active = nav.querySelector('button.active');
+  if (!active) { ind.style.width = '0'; return; }
+  const navRect = nav.getBoundingClientRect();
+  const btnRect = active.getBoundingClientRect();
+  const left = btnRect.left - navRect.left;
+  const width = btnRect.width;
+  ind.style.transform = `translateX(${left}px)`;
+  ind.style.width = width + 'px';
+}
+window.addEventListener('resize', updateNavIndicator);
 
 /* ---------- Confetti ---------- */
 const confetti = (() => {
@@ -960,7 +1175,123 @@ function renderAll() {
   renderHistory();
 }
 
+/* ---------- Dynamic UX utilities ---------- */
+
+const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function haptic(ms = 10) {
+  if (prefersReducedMotion) return;
+  try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
+}
+
+function countUp(el, from, to, dur = 300) {
+  if (prefersReducedMotion || from === to) { el.textContent = to || '-'; return; }
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const v = Math.round(from + (to - from) * eased);
+    el.textContent = v || '-';
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function flipRows(container, selector, mutate) {
+  if (prefersReducedMotion) { mutate(); return; }
+  const before = new Map();
+  container.querySelectorAll(selector).forEach(r => {
+    before.set(r.dataset.key, r.getBoundingClientRect().top);
+  });
+  mutate();
+  const after = container.querySelectorAll(selector);
+  after.forEach(r => {
+    const first = before.get(r.dataset.key);
+    if (first == null) return;
+    const last = r.getBoundingClientRect().top;
+    const dy = first - last;
+    if (!dy) return;
+    r.style.transform = `translateY(${dy}px)`;
+    r.style.transition = 'transform 0s';
+    requestAnimationFrame(() => {
+      r.style.transition = 'transform 0.45s cubic-bezier(.2,.8,.2,1)';
+      r.style.transform = '';
+      setTimeout(() => { r.style.transition = ''; }, 500);
+    });
+  });
+}
+
+/* Ripple effect on tactile buttons */
+function spawnRipple(e) {
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const point = e.touches ? e.touches[0] : e;
+  const x = (point.clientX || rect.left + rect.width / 2) - rect.left;
+  const y = (point.clientY || rect.top + rect.height / 2) - rect.top;
+  const size = Math.max(rect.width, rect.height) * 0.9;
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  r.style.left = x + 'px';
+  r.style.top = y + 'px';
+  r.style.width = r.style.height = size + 'px';
+  btn.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+document.addEventListener('pointerdown', (e) => {
+  const btn = e.target.closest('.btn, .btn-danger, nav button, .team-buttons button');
+  if (btn) spawnRipple({ currentTarget: btn, clientX: e.clientX, clientY: e.clientY });
+});
+
+/* Team pick and finalize haptic */
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.team-buttons button')) haptic(12);
+  if (e.target.closest('#finalizeBtn')) haptic(18);
+  if (e.target.closest('#resetBtn')) haptic(14);
+});
+
+/* Swipe between tabs on <main> */
+(function enableSwipe() {
+  const main = document.querySelector('main');
+  if (!main) return;
+  let sx = 0, sy = 0, tracking = false, ignore = false;
+  main.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) { tracking = false; return; }
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY;
+    ignore = !!e.target.closest('.score-table-wrap, input, textarea');
+    tracking = true;
+  }, { passive: true });
+  main.addEventListener('touchend', (e) => {
+    if (!tracking || ignore) { tracking = false; return; }
+    const t = (e.changedTouches && e.changedTouches[0]);
+    if (!t) return;
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    tracking = false;
+    if (Math.abs(dx) < 60) return;
+    if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const idx = TAB_ORDER.indexOf(currentTab);
+    const target = dx < 0 ? TAB_ORDER[idx + 1] : TAB_ORDER[idx - 1];
+    if (target) switchTab(target);
+  }, { passive: true });
+})();
+
+/* Subtle parallax on body background */
+if (!prefersReducedMotion) {
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      document.body.style.backgroundPositionY = (window.scrollY * 0.15) + 'px';
+      ticking = false;
+    });
+  }, { passive: true });
+}
+
 renderAll();
+requestAnimationFrame(updateNavIndicator);
+window.addEventListener('load', updateNavIndicator);
 </script>
 </body>
 </html>
