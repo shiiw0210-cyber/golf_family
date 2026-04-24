@@ -1007,9 +1007,7 @@
       <div class="tagline">家族でつくる、打ち数の記録</div>
     </div>
     <figure class="family-photo" id="familyPhoto" style="display:none">
-      <img src="images/family-2026.jpg" alt="家族ゴルフの集合写真"
-           onload="this.parentElement.style.display='block'"
-           onerror="this.parentElement.style.display='none'">
+      <img id="familyPhotoImg" alt="家族ゴルフの集合写真">
       <figcaption class="caption">家族の一枚</figcaption>
     </figure>
     <div class="home-card" id="homeCurrent"></div>
@@ -2561,9 +2559,41 @@ function wireOcrUI() {
   };
 }
 
+/* ---------- Family photo random pick ---------- */
+
+const FAMILY_PHOTO_SLOTS = [
+  'family-2026.jpg',
+  ...Array.from({ length: 12 }, (_, i) => `family-${i + 1}.jpg`),
+];
+
+function probeImage(src) {
+  return new Promise(resolve => {
+    const test = new Image();
+    test.onload = () => resolve({ src, ok: true });
+    test.onerror = () => resolve({ src, ok: false });
+    test.src = src;
+  });
+}
+
+async function setupFamilyPhotos() {
+  const figure = document.getElementById('familyPhoto');
+  const img = document.getElementById('familyPhotoImg');
+  if (!figure || !img) return;
+  const results = await Promise.all(FAMILY_PHOTO_SLOTS.map(probeImage));
+  const available = results.filter(r => r.ok).map(r => r.src);
+  if (available.length === 0) {
+    figure.style.display = 'none';
+    return;
+  }
+  const pick = available[Math.floor(Math.random() * available.length)];
+  img.src = pick;
+  figure.style.display = 'block';
+}
+
 wireCourseForm();
 wireOcrUI();
 renderAll();
+setupFamilyPhotos();
 requestAnimationFrame(updateNavIndicator);
 window.addEventListener('load', updateNavIndicator);
 </script>
