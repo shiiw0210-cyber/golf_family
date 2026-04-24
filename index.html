@@ -648,6 +648,168 @@
   .legacy-form-actions { display: flex; gap: 8px; margin-top: 12px; }
   .legacy-form-actions .btn { flex: 1; }
 
+  /* Course selector */
+  .course-selector {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .course-selector select {
+    flex: 1;
+    min-width: 160px;
+    padding: 8px 10px;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 15px;
+    background: #fffef9;
+    color: var(--ink);
+  }
+  .course-selector select:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
+  .course-actions { display: flex; gap: 6px; }
+  .course-actions button {
+    padding: 8px 12px;
+    border: 1px solid var(--green);
+    background: var(--card-bg);
+    color: var(--green);
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .course-actions button.danger { border-color: #c62828; color: #c62828; }
+  .course-actions button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .venue-sub {
+    margin-top: 8px;
+    display: block;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #fffef9;
+    color: var(--ink);
+  }
+  .venue-sub:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
+  .course-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .course-hint strong { color: var(--green); font-weight: 700; }
+
+  /* Course registration form */
+  .course-form {
+    margin-top: 12px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(212, 160, 23, 0.25);
+    animation: cardRise 0.4s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .course-form[hidden] { display: none; }
+  .course-form .cf-title {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .course-form .cf-name {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 15px;
+    background: #fffef9;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .course-form .cf-name:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-color: var(--gold); }
+  .par-preset {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .par-preset button {
+    padding: 4px 10px;
+    border: 1px solid #e0d4b0;
+    background: #fffdf2;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .par-preset button:hover { border-color: var(--gold); color: var(--gold); }
+  .par-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 4px;
+  }
+  @media (max-width: 520px) { .par-grid { grid-template-columns: repeat(6, 1fr); } }
+  .par-grid .par-cell {
+    display: flex; flex-direction: column; align-items: center;
+    background: #fffef6;
+    border: 1px solid #e6d9b0;
+    border-radius: 6px;
+    padding: 4px 2px;
+  }
+  .par-grid .par-cell label {
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+    font-weight: 600;
+  }
+  .par-grid .par-cell select {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-weight: 800;
+    color: var(--green);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .par-grid .par-cell select:focus { outline: 2px solid var(--gold); outline-offset: -1px; border-radius: 4px; }
+
+  /* Par row in score table */
+  table.scores tr.par-row th {
+    background: #fff3c4;
+    color: #8a6d1a;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 2px;
+    letter-spacing: 0.04em;
+  }
+  table.scores tr.par-row th.par-name {
+    background: var(--cream-deep);
+    color: var(--ink-soft);
+    font-size: 10px;
+    text-align: right;
+    padding-right: 10px;
+  }
+  table.scores tr.par-row th.par-total { background: #fbf3d8; color: var(--green); }
+
+  /* Score cell color by par diff */
+  table.scores td.score-eagle  { background: #ffd966; }
+  table.scores td.score-birdie { background: #cde5a8; }
+  table.scores td.score-par    { background: transparent; }
+  table.scores td.score-bogey  { background: #ffe0c2; }
+  table.scores td.score-double { background: #ffc1c1; }
+  table.scores td.score-eagle input,
+  table.scores td.score-birdie input,
+  table.scores td.score-bogey input,
+  table.scores td.score-double input { font-weight: 800; }
+
   /* Respect reduced-motion preferences */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -700,8 +862,33 @@
         <input type="date" id="inputDate">
       </div>
       <div class="field">
-        <label for="inputVenue">会場</label>
-        <input type="text" id="inputVenue" placeholder="例: ○○カントリークラブ">
+        <label for="courseSelect">会場 (ゴルフ場)</label>
+        <div class="course-selector">
+          <select id="courseSelect">
+            <option value="">(未選択)</option>
+          </select>
+          <div class="course-actions">
+            <button type="button" id="courseAddBtn">＋登録</button>
+            <button type="button" id="courseDeleteBtn" class="danger" disabled>削除</button>
+          </div>
+        </div>
+        <input type="text" id="inputVenue" class="venue-sub" placeholder="または直接入力 (例: ○○カントリークラブ)">
+        <div class="course-hint" id="courseHint"></div>
+        <form class="course-form" id="courseForm" hidden>
+          <div class="cf-title">ゴルフ場を登録 (各ホールのパーを入力)</div>
+          <input type="text" class="cf-name" id="courseFormName" placeholder="ゴルフ場名" required>
+          <div class="par-preset">
+            <button type="button" data-preset="72">パー72 (標準)</button>
+            <button type="button" data-preset="71">パー71</button>
+            <button type="button" data-preset="70">パー70</button>
+            <button type="button" data-preset="all4">全部パー4</button>
+          </div>
+          <div class="par-grid" id="parGrid"></div>
+          <div class="legacy-form-actions" style="margin-top:12px">
+            <button class="btn" type="submit">登録する</button>
+            <button class="btn btn-outline" type="button" id="courseFormCancel">キャンセル</button>
+          </div>
+        </form>
       </div>
     </div>
     <h3>チーム編成(A vs B)</h3>
@@ -815,9 +1002,16 @@ function emptyCurrent(number) {
     number: number,
     date: today,
     venue: '',
+    courseId: null,
     teams: Object.fromEntries(MEMBERS.map(m => [m, null])),
     scores: Object.fromEntries(MEMBERS.map(m => [m, Array(HOLES).fill(null)])),
   };
+}
+
+function ensureStateShape(s) {
+  if (!s.courses) s.courses = [];
+  if (s.current && s.current.courseId === undefined) s.current.courseId = null;
+  return s;
 }
 
 function loadState() {
@@ -825,7 +1019,7 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.current && parsed.history) return parsed;
+      if (parsed.current && parsed.history) return ensureStateShape(parsed);
     }
   } catch (e) {}
   try {
@@ -836,11 +1030,11 @@ function loadState() {
         const cur = emptyCurrent(1);
         cur.teams = parsed.teams;
         cur.scores = parsed.scores;
-        return { current: cur, history: [] };
+        return ensureStateShape({ current: cur, history: [], courses: [] });
       }
     }
   } catch (e) {}
-  return { current: emptyCurrent(1), history: [] };
+  return ensureStateShape({ current: emptyCurrent(1), history: [], courses: [] });
 }
 
 function saveState() {
@@ -875,6 +1069,7 @@ function setScore(member, holeIndex, raw) {
   }
   state.current.scores[member][holeIndex] = next;
   saveState();
+  applyParClassForCell(member, holeIndex);
   updateTotalCell(member, prev, next, holeIndex);
   renderRanking();
   renderHome();
@@ -963,13 +1158,223 @@ function renderHome() {
   }
 }
 
+/* ---------- Courses ---------- */
+
+const PAR_PRESETS = {
+  '72':   [4,4,3,4,5,4,3,4,5, 4,4,3,4,5,4,3,4,5],
+  '71':   [4,4,3,4,5,4,3,4,4, 4,4,3,4,5,4,3,4,5],
+  '70':   [4,4,3,4,5,4,3,4,4, 4,4,3,4,5,4,3,4,4],
+  'all4': Array(HOLES).fill(4),
+};
+
+function getCourse(id) {
+  if (!id) return null;
+  return (state.courses || []).find(c => c.id === id) || null;
+}
+
+function currentPars() {
+  const c = getCourse(state.current.courseId);
+  return c ? c.pars : null;
+}
+
+function currentCourseTotalPar() {
+  const pars = currentPars();
+  return pars ? pars.reduce((s, v) => s + (v || 0), 0) : 0;
+}
+
+function parDiffClass(score, par) {
+  if (!score || !par) return '';
+  const d = score - par;
+  if (d <= -2) return 'score-eagle';
+  if (d === -1) return 'score-birdie';
+  if (d === 0) return 'score-par';
+  if (d === 1) return 'score-bogey';
+  return 'score-double';
+}
+
+function addCourse(name, pars) {
+  const trimmed = (name || '').trim();
+  if (!trimmed) { alert('ゴルフ場名を入力してください'); return null; }
+  if (!Array.isArray(pars) || pars.length !== HOLES || pars.some(p => ![3,4,5].includes(p))) {
+    alert('各ホールのパー (3/4/5) を正しく指定してください'); return null;
+  }
+  const course = {
+    id: 'course-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    name: trimmed,
+    pars: pars.slice(),
+  };
+  state.courses.push(course);
+  saveState();
+  return course;
+}
+
+function deleteCourse(id) {
+  const c = getCourse(id);
+  if (!c) return;
+  if (!confirm(`「${c.name}」をコース一覧から削除します。よろしいですか？`)) return;
+  state.courses = state.courses.filter(x => x.id !== id);
+  if (state.current.courseId === id) state.current.courseId = null;
+  saveState();
+  renderSetupInputs();
+  renderScoreTable();
+  renderHome();
+  haptic(12);
+}
+
+function selectCourse(id) {
+  const c = getCourse(id);
+  state.current.courseId = c ? c.id : null;
+  if (c) state.current.venue = c.name;
+  saveState();
+  renderSetupInputs();
+  renderScoreTable();
+  renderHome();
+}
+
 function renderSetupInputs() {
   const d = document.getElementById('inputDate');
   const v = document.getElementById('inputVenue');
   d.value = state.current.date || '';
   v.value = state.current.venue || '';
   d.onchange = () => { state.current.date = d.value; saveState(); renderHome(); };
-  v.oninput = () => { state.current.venue = v.value; saveState(); renderHome(); };
+  v.oninput = () => {
+    state.current.venue = v.value;
+    // If user types a venue that doesn't match the selected course, detach it.
+    const sel = getCourse(state.current.courseId);
+    if (sel && v.value !== sel.name) {
+      state.current.courseId = null;
+      const selectEl = document.getElementById('courseSelect');
+      if (selectEl) selectEl.value = '';
+      updateCourseDeleteBtn();
+      updateCourseHint();
+      renderScoreTable();
+    }
+    saveState();
+    renderHome();
+  };
+
+  renderCourseSelector();
+}
+
+function renderCourseSelector() {
+  const select = document.getElementById('courseSelect');
+  if (!select) return;
+  const curId = state.current.courseId || '';
+  select.innerHTML = '<option value="">(未選択)</option>' +
+    state.courses.map(c => `<option value="${c.id}" ${c.id === curId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+  select.onchange = () => selectCourse(select.value);
+  updateCourseDeleteBtn();
+  updateCourseHint();
+}
+
+function updateCourseDeleteBtn() {
+  const btn = document.getElementById('courseDeleteBtn');
+  if (!btn) return;
+  btn.disabled = !state.current.courseId;
+  btn.onclick = () => {
+    if (state.current.courseId) deleteCourse(state.current.courseId);
+  };
+}
+
+function updateCourseHint() {
+  const hint = document.getElementById('courseHint');
+  if (!hint) return;
+  const c = getCourse(state.current.courseId);
+  if (c) {
+    const total = c.pars.reduce((s, v) => s + v, 0);
+    const out = c.pars.slice(0, 9).reduce((s, v) => s + v, 0);
+    const inn = c.pars.slice(9).reduce((s, v) => s + v, 0);
+    hint.innerHTML = `<strong>${escapeHtml(c.name)}</strong> / OUT ${out} + IN ${inn} = パー ${total}`;
+  } else if (state.courses.length === 0) {
+    hint.textContent = 'まだゴルフ場が登録されていません。「＋登録」からコースとパー情報を追加すると、スコア表にパーが自動表示されます。';
+  } else {
+    hint.textContent = 'コース未選択 (直接入力の会場名のみ保存されます)';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+/* ---------- Course registration form ---------- */
+
+function renderParGrid(initialPars) {
+  const grid = document.getElementById('parGrid');
+  if (!grid) return;
+  const pars = initialPars || PAR_PRESETS['72'];
+  grid.innerHTML = '';
+  for (let h = 0; h < HOLES; h++) {
+    const cell = document.createElement('div');
+    cell.className = 'par-cell';
+    const label = document.createElement('label');
+    label.textContent = 'H' + (h + 1);
+    const sel = document.createElement('select');
+    sel.dataset.h = String(h);
+    [3, 4, 5].forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = String(p); opt.textContent = String(p);
+      if (p === pars[h]) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    cell.appendChild(label);
+    cell.appendChild(sel);
+    grid.appendChild(cell);
+  }
+}
+
+function readParGrid() {
+  const grid = document.getElementById('parGrid');
+  if (!grid) return null;
+  const out = Array(HOLES).fill(0);
+  grid.querySelectorAll('select[data-h]').forEach(sel => {
+    out[+sel.dataset.h] = Number(sel.value);
+  });
+  return out;
+}
+
+function wireCourseForm() {
+  const addBtn = document.getElementById('courseAddBtn');
+  const form = document.getElementById('courseForm');
+  const nameInput = document.getElementById('courseFormName');
+  const cancelBtn = document.getElementById('courseFormCancel');
+  if (!addBtn || !form) return;
+
+  function openForm() {
+    renderParGrid(PAR_PRESETS['72']);
+    nameInput.value = '';
+    form.hidden = false;
+    setTimeout(() => nameInput.focus(), 0);
+  }
+  function closeForm() {
+    form.hidden = true;
+    form.reset();
+  }
+  addBtn.onclick = openForm;
+  cancelBtn.onclick = closeForm;
+
+  form.querySelectorAll('.par-preset button').forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.dataset.preset;
+      const pars = PAR_PRESETS[key];
+      if (pars) renderParGrid(pars);
+    };
+  });
+
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const pars = readParGrid();
+    const course = addCourse(nameInput.value, pars);
+    if (course) {
+      state.current.courseId = course.id;
+      state.current.venue = course.name;
+      saveState();
+      closeForm();
+      renderSetupInputs();
+      renderScoreTable();
+      renderHome();
+      haptic(14);
+    }
+  };
 }
 
 function renderTeams() {
@@ -999,16 +1404,24 @@ function renderTeams() {
 
 function renderScoreTable() {
   const table = document.getElementById('scoreTable');
+  const pars = currentPars();
   let html = '<thead><tr><th>メンバー</th>';
   for (let i = 1; i <= HOLES; i++) html += `<th>${i}</th>`;
-  html += '<th class="total">計</th></tr></thead><tbody>';
+  html += '<th class="total">計</th></tr>';
+  if (pars) {
+    html += '<tr class="par-row"><th class="par-name">Par</th>';
+    for (let h = 0; h < HOLES; h++) html += `<th>${pars[h]}</th>`;
+    html += `<th class="par-total">${currentCourseTotalPar()}</th></tr>`;
+  }
+  html += '</thead><tbody>';
   MEMBERS.forEach(m => {
     const t = state.current.teams[m];
     const color = t === 'A' ? '#3b82f6' : t === 'B' ? '#ef4444' : '#bbb';
     html += `<tr><td class="name"><span class="team-badge" style="background:${color}"></span>${m}</td>`;
     for (let h = 0; h < HOLES; h++) {
       const v = state.current.scores[m][h];
-      html += `<td><input type="number" inputmode="numeric" min="1" max="20" value="${v ?? ''}" data-m="${m}" data-h="${h}"></td>`;
+      const cls = pars ? parDiffClass(v, pars[h]) : '';
+      html += `<td class="${cls}"><input type="number" inputmode="numeric" min="1" max="20" value="${v ?? ''}" data-m="${m}" data-h="${h}"></td>`;
     }
     html += `<td class="total" id="total-${m}" data-total="${totalOf(m)}">${totalOf(m) || '-'}</td></tr>`;
   });
@@ -1018,6 +1431,18 @@ function renderScoreTable() {
     inp.addEventListener('change', () => setScore(inp.dataset.m, +inp.dataset.h, inp.value));
     inp.addEventListener('blur', () => setScore(inp.dataset.m, +inp.dataset.h, inp.value));
   });
+}
+
+function applyParClassForCell(member, holeIndex) {
+  const pars = currentPars();
+  const input = document.querySelector(`table.scores input[data-m="${CSS.escape(member)}"][data-h="${holeIndex}"]`);
+  const td = input ? input.parentElement : null;
+  if (!td) return;
+  td.classList.remove('score-eagle', 'score-birdie', 'score-par', 'score-bogey', 'score-double');
+  if (!pars) return;
+  const v = state.current.scores[member][holeIndex];
+  const cls = parDiffClass(v, pars[holeIndex]);
+  if (cls) td.classList.add(cls);
 }
 
 function computeTotals() {
@@ -1672,6 +2097,7 @@ if (!prefersReducedMotion) {
   }, { passive: true });
 }
 
+wireCourseForm();
 renderAll();
 requestAnimationFrame(updateNavIndicator);
 window.addEventListener('load', updateNavIndicator);
