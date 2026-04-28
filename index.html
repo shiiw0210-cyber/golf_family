@@ -411,6 +411,146 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  /* Inputs (date, venue) */
+  .input-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .input-row label { font-size: 12px; color: #555; font-weight: bold; }
+  .text-input, .date-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 16px;
+    font-family: inherit;
+    min-height: 44px;
+  }
+  .text-input:focus, .date-input:focus { outline: 2px solid #2d5016; border-color: #2d5016; }
+
+  /* Finish button */
+  .finish-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 24px 0 16px;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+    min-height: 56px;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+  }
+  .finish-btn:active { transform: scale(0.98); }
+  .finish-btn:disabled {
+    background: #d1d5db;
+    color: #888;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* History */
+  .history-empty {
+    text-align: center;
+    padding: 48px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    color: #888;
+  }
+  .history-empty .big { font-size: 56px; margin-bottom: 12px; line-height: 1; }
+  .history-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-left: 4px solid #f59e0b;
+    animation: slide-up 0.4s ease-out backwards;
+  }
+  .history-card .number {
+    display: inline-block;
+    background: #2d5016;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .history-card .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .history-card .meta { font-size: 13px; color: #6b7280; }
+  .history-card .winner-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+  }
+  .history-card .winner-row .crown { font-size: 24px; }
+  .history-card .winner-row .winner-name { flex: 1; font-weight: bold; font-size: 16px; }
+  .history-card .winner-row .winner-score { font-size: 22px; font-weight: 900; color: #92400e; font-variant-numeric: tabular-nums; }
+  .history-card details { margin-top: 4px; }
+  .history-card summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: #2d5016;
+    font-weight: bold;
+    padding: 6px 0;
+    list-style: none;
+  }
+  .history-card summary::-webkit-details-marker { display: none; }
+  .history-card summary::before { content: '▸ '; transition: transform 0.2s; display: inline-block; }
+  .history-card details[open] summary::before { transform: rotate(90deg); }
+  .history-card .full-rank {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .history-card .full-rank-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: #f9fafb;
+    font-size: 13px;
+  }
+  .history-card .full-rank-row .r { font-weight: bold; color: #6b7280; min-width: 20px; }
+  .history-card .full-rank-row .n { flex: 1; }
+  .history-card .full-rank-row .s { font-weight: bold; color: #2d5016; font-variant-numeric: tabular-nums; }
+  .history-card .delete-btn {
+    background: none;
+    border: none;
+    color: #c62828;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 8px;
+    margin-top: 4px;
+  }
+
+  /* Confetti */
+  #confetti {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+  }
+
   @media (max-width: 360px) {
     header h1 { font-size: 16px; }
     .team-result .score { font-size: 26px; }
@@ -454,6 +594,8 @@
 </head>
 <body>
 
+<canvas id="confetti"></canvas>
+
 <header>
   <h1>⛳ 家族ゴルフ大会</h1>
 </header>
@@ -461,6 +603,18 @@
 <main>
   <section id="tab-teams" class="active">
     <h2>大会設定</h2>
+
+    <div class="setting-card">
+      <h3>開催情報</h3>
+      <div class="input-row">
+        <label for="dateInput">開催日</label>
+        <input type="date" id="dateInput" class="date-input">
+      </div>
+      <div class="input-row">
+        <label for="venueInput">開催場所</label>
+        <input type="text" id="venueInput" class="text-input" placeholder="例: 富士カントリークラブ">
+      </div>
+    </div>
 
     <div class="setting-card">
       <h3>スタートホール</h3>
@@ -496,13 +650,20 @@
   <section id="tab-ranking">
     <h2>🏆 個人ランキング</h2>
     <div id="rankingContent"></div>
+    <button class="finish-btn" id="finishBtn">🏁 大会を終了して記録する</button>
+  </section>
+
+  <section id="tab-history">
+    <h2>📚 過去の大会</h2>
+    <div id="historyContent"></div>
   </section>
 </main>
 
 <nav class="bottom-nav">
-  <button data-tab="teams" class="active"><span class="icon">👥</span><span>チーム</span></button>
+  <button data-tab="teams" class="active"><span class="icon">⚙️</span><span>設定</span></button>
   <button data-tab="scores"><span class="icon">📝</span><span>スコア</span></button>
   <button data-tab="ranking"><span class="icon">🏆</span><span>順位</span></button>
+  <button data-tab="history"><span class="icon">📚</span><span>履歴</span></button>
 </nav>
 
 <script>
@@ -513,6 +674,14 @@ const STORAGE_KEY = 'golfFamilyData_v1';
 let scoreView = 'out';
 let state = loadState();
 
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const da = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${da}`;
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -520,6 +689,9 @@ function loadState() {
       const parsed = JSON.parse(raw);
       if (parsed.teams && parsed.scores) {
         if (!parsed.startHole) parsed.startHole = 1;
+        if (!parsed.date) parsed.date = todayStr();
+        if (parsed.venue == null) parsed.venue = '';
+        if (!Array.isArray(parsed.history)) parsed.history = [];
         return parsed;
       }
     }
@@ -528,6 +700,9 @@ function loadState() {
     teams: Object.fromEntries(MEMBERS.map(m => [m, null])),
     scores: Object.fromEntries(MEMBERS.map(m => [m, Array(HOLES).fill(null)])),
     startHole: 1,
+    date: todayStr(),
+    venue: '',
+    history: [],
   };
 }
 
@@ -803,6 +978,192 @@ function renderRanking() {
   }
 
   container.innerHTML = html;
+  updateFinishBtn();
+}
+
+function updateFinishBtn() {
+  const btn = document.getElementById('finishBtn');
+  if (!btn) return;
+  const anyScore = MEMBERS.some(m => holesDone(m) > 0);
+  btn.disabled = !anyScore;
+  btn.textContent = anyScore ? '🏁 大会を終了して記録する' : '🏁 スコアを入力してください';
+}
+
+function formatDateDisplay(iso) {
+  if (!iso) return '日付未設定';
+  const [y, m, d] = iso.split('-');
+  return `${y}.${m}.${d}`;
+}
+
+function setDate(v) {
+  state.date = v;
+  saveState();
+}
+
+function setVenue(v) {
+  state.venue = v;
+  saveState();
+}
+
+function finishTournament() {
+  const ranked = MEMBERS
+    .map(m => ({ name: m, team: state.teams[m], total: totalOf(m), holes: holesDone(m) }))
+    .filter(x => x.holes > 0)
+    .sort((a, b) => a.total - b.total);
+  if (ranked.length === 0) return;
+
+  const winner = ranked[0];
+  const number = state.history.length === 0
+    ? 1
+    : Math.max(...state.history.map(h => h.number || 0)) + 1;
+
+  const entry = {
+    id: 'g_' + Date.now(),
+    number,
+    date: state.date || todayStr(),
+    venue: state.venue || '',
+    startHole: state.startHole || 1,
+    teams: { ...state.teams },
+    scores: Object.fromEntries(MEMBERS.map(m => [m, [...state.scores[m]]])),
+    winnerName: winner.name,
+    winnerTeam: winner.team,
+    winnerScore: winner.total,
+    finishedAt: new Date().toISOString(),
+  };
+
+  state.history.unshift(entry);
+  state.scores = Object.fromEntries(MEMBERS.map(m => [m, Array(HOLES).fill(null)]));
+  state.date = todayStr();
+  state.venue = '';
+  saveState();
+
+  fireConfetti();
+
+  setTimeout(() => {
+    renderTeams();
+    renderScoreTable();
+    renderRanking();
+    renderHistory();
+    document.getElementById('dateInput').value = state.date;
+    document.getElementById('venueInput').value = state.venue;
+    document.querySelector('nav.bottom-nav button[data-tab="history"]').click();
+  }, 600);
+}
+
+function renderHistory() {
+  const container = document.getElementById('historyContent');
+  if (!container) return;
+  if (state.history.length === 0) {
+    container.innerHTML = `
+      <div class="history-empty">
+        <div class="big">📖</div>
+        <p>まだ記録がありません<br>大会を終わらせると、ここに残ります。</p>
+      </div>`;
+    return;
+  }
+  let html = '';
+  state.history.forEach((h, idx) => {
+    const ranked = MEMBERS
+      .map(m => ({ name: m, team: h.teams[m], total: (h.scores[m] || []).reduce((s, v) => s + (v || 0), 0), holes: (h.scores[m] || []).filter(v => v != null).length }))
+      .filter(x => x.holes > 0)
+      .sort((a, b) => a.total - b.total);
+    let prevTotal = null, prevRank = 0;
+    ranked.forEach((r, i) => {
+      if (r.total === prevTotal) r.rank = prevRank;
+      else { r.rank = i + 1; prevRank = r.rank; prevTotal = r.total; }
+    });
+    const winnerPill = teamPillHtml(h.winnerTeam);
+    const venueText = h.venue ? `📍 ${escapeHtml(h.venue)}` : '📍 場所未設定';
+    html += `
+      <div class="history-card" style="animation-delay:${0.05 * idx}s">
+        <div class="title-row">
+          <span class="number">第 ${h.number} 回</span>
+          <span class="meta">${formatDateDisplay(h.date)}</span>
+        </div>
+        <div class="meta">${venueText}</div>
+        <div class="winner-row">
+          <div class="crown">👑</div>
+          <div class="winner-name">${h.winnerName}${winnerPill}</div>
+          <div class="winner-score">${h.winnerScore}</div>
+        </div>
+        <details>
+          <summary>全員の順位を見る</summary>
+          <div class="full-rank">
+            ${ranked.map(r => `
+              <div class="full-rank-row">
+                <span class="r">${r.rank}</span>
+                <span class="n">${r.name}${teamPillHtml(r.team)}</span>
+                <span class="s">${r.total}</span>
+              </div>`).join('')}
+          </div>
+          <button class="delete-btn" data-id="${h.id}">この記録を削除</button>
+        </details>
+      </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.onclick = () => deleteHistoryItem(btn.dataset.id);
+  });
+}
+
+function deleteHistoryItem(id) {
+  if (!confirm('この記録を削除しますか?')) return;
+  state.history = state.history.filter(h => h.id !== id);
+  saveState();
+  renderHistory();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function fireConfetti() {
+  const canvas = document.getElementById('confetti');
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  canvas.style.display = 'block';
+  const ctx = canvas.getContext('2d');
+  const colors = ['#f59e0b', '#fbbf24', '#3b82f6', '#ef4444', '#10b981', '#a78bfa', '#ec4899'];
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const pieces = [];
+  for (let i = 0; i < 140; i++) {
+    pieces.push({
+      x: cx + (Math.random() - 0.5) * 80,
+      y: cy + (Math.random() - 0.5) * 40,
+      vx: (Math.random() - 0.5) * 14,
+      vy: -6 - Math.random() * 10,
+      g: 0.28,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 0.25,
+      size: 6 + Math.random() * 7,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+  let frame = 0;
+  const animate = () => {
+    frame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.g;
+      p.rot += p.vrot;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.55);
+      ctx.restore();
+    });
+    if (frame < 200 && pieces.some(p => p.y < canvas.height + 40)) {
+      requestAnimationFrame(animate);
+    } else {
+      canvas.style.display = 'none';
+    }
+  };
+  animate();
 }
 
 document.querySelectorAll('nav.bottom-nav button').forEach(btn => {
@@ -836,9 +1197,27 @@ document.getElementById('resetBtn').onclick = () => {
 renderStartHoleSelect();
 document.getElementById('startHoleSelect').onchange = (e) => setStartHole(Number(e.target.value));
 
+const dateInp = document.getElementById('dateInput');
+dateInp.value = state.date;
+dateInp.onchange = (e) => setDate(e.target.value);
+
+const venueInp = document.getElementById('venueInput');
+venueInp.value = state.venue;
+venueInp.oninput = (e) => setVenue(e.target.value);
+
+document.getElementById('finishBtn').onclick = () => {
+  const ranked = MEMBERS.filter(m => holesDone(m) > 0);
+  if (ranked.length === 0) return;
+  const venueLabel = state.venue ? `「${state.venue}」` : '(場所未設定)';
+  if (confirm(`${formatDateDisplay(state.date)} ${venueLabel} の大会を記録します。\nスコアは履歴に保存され、現在のスコアはリセットされます。よろしいですか?`)) {
+    finishTournament();
+  }
+};
+
 renderTeams();
 renderScoreTable();
 renderRanking();
+renderHistory();
 </script>
 </body>
 </html>
