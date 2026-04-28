@@ -1154,6 +1154,48 @@
     font-size: 18px;
     font-variant-numeric: tabular-nums;
   }
+  .roulette-result-card.is-spinning {
+    background: #1a1208;
+    border-left-color: var(--gold);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35), inset 0 0 16px rgba(0,0,0,0.6);
+  }
+  .roulette-result-card.is-spinning .place {
+    background: var(--gold);
+    color: #fff;
+  }
+  .roulette-result-card.is-spinning .name {
+    color: #ffd966;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    animation: rouletteShake 0.06s linear infinite;
+  }
+  .roulette-result-card.is-spinning .pct {
+    color: #ffd966;
+  }
+  @keyframes rouletteShake {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-1px); }
+  }
+  .roulette-result-card.is-settled .name {
+    animation: rouletteSettle 0.5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes rouletteSettle {
+    0%   { transform: scale(0.85); opacity: 0.7; }
+    60%  { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .roulette-result-card.gold.is-settled {
+    box-shadow: 0 0 0 3px var(--gold-bright), 0 6px 18px rgba(212, 160, 23, 0.4);
+  }
+  .roulette-step-hint {
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: center;
+    margin: 6px 0 0;
+    letter-spacing: 0.05em;
+  }
 </style>
 </head>
 <body>
@@ -1330,6 +1372,7 @@
     <h3>賞金配分</h3>
     <div class="prize-list" id="prizeList"></div>
     <button class="btn-roulette" id="rouletteStartBtn" disabled>🎲 ルーレット開始</button>
+    <p class="roulette-step-hint" id="rouletteStepHint" style="display:none"></p>
     <h3 id="rouletteResultHeading" style="display:none">🎉 抽選結果</h3>
     <div id="rouletteResult"></div>
   </section>
@@ -2524,7 +2567,25 @@ function renderRoulette() {
   `).join('');
 }
 
+function abortReveal() {
+  if (_revealSpinTimer) { clearTimeout(_revealSpinTimer); _revealSpinTimer = null; }
+  _revealSpinning = false;
+  _revealQueue = [];
+  _revealIdx = 0;
+  const heading = document.getElementById('rouletteResultHeading');
+  if (heading) heading.style.display = 'none';
+  const container = document.getElementById('rouletteResult');
+  if (container) container.innerHTML = '';
+  setRouletteStepHint('');
+  const btn = document.getElementById('rouletteStartBtn');
+  if (btn) {
+    btn.textContent = '🎲 ルーレット開始';
+    btn.onclick = startRoulette;
+  }
+}
+
 function setRouletteMode(mode) {
+  abortReveal();
   rouletteMode = mode;
   document.querySelectorAll('#rouletteMode button').forEach(b => {
     b.classList.toggle('selected', b.dataset.mode === mode);
@@ -2534,6 +2595,7 @@ function setRouletteMode(mode) {
 }
 
 function shuffleRouletteOrder() {
+  abortReveal();
   randomOrder = shuffleMembers();
   renderRoulette();
 }
@@ -2548,10 +2610,32 @@ function weightedPick(weights) {
   return weights.length - 1;
 }
 
+/* Per-winner reveal state */
+let _revealQueue = [];
+let _revealIdx = 0;
+let _revealSpinTimer = null;
+let _revealSpinning = false;
+
+function classForPlace(place) {
+  if (place === 1) return 'gold';
+  if (place === 2) return 'silver';
+  if (place === 3) return 'bronze';
+  return '';
+}
+
+function setRouletteStepHint(text) {
+  const hint = document.getElementById('rouletteStepHint');
+  if (!hint) return;
+  if (!text) { hint.style.display = 'none'; hint.textContent = ''; return; }
+  hint.style.display = 'block';
+  hint.textContent = text;
+}
+
 function startRoulette() {
   const ranked = rouletteSourceList();
   if (ranked.length === 0) return;
 
+  // Compute winners (existing weighted draw, highest prize → lowest)
   const pool = [...ranked];
   const winners = [];
   const prizes = PRIZE_PERCENTAGES.slice(0, pool.length);
@@ -2562,40 +2646,95 @@ function startRoulette() {
     pool.splice(pickedIdx, 1);
   });
 
+  // Reveal order: lowest prize first → 1等 last (drama)
+  _revealQueue = winners.slice().reverse();
+  _revealIdx = 0;
+
+  if (_revealSpinTimer) { clearTimeout(_revealSpinTimer); _revealSpinTimer = null; }
+  _revealSpinning = false;
+
   const heading = document.getElementById('rouletteResultHeading');
   const container = document.getElementById('rouletteResult');
   const btn = document.getElementById('rouletteStartBtn');
   heading.style.display = 'block';
   container.innerHTML = '';
-  btn.disabled = true;
-  btn.textContent = '抽選中...';
+  btn.disabled = false;
+  const first = _revealQueue[0];
+  btn.textContent = `🎰 ${first.place}等を発表 (START)`;
+  btn.onclick = nextRevealStep;
+  setRouletteStepHint(`下位から順に1人ずつ発表していきます (全${_revealQueue.length}人)`);
+}
 
-  winners.forEach((w, i) => {
-    const card = document.createElement('div');
-    let cls = 'roulette-result-card';
-    if (i === 0) cls += ' gold';
-    else if (i === 1) cls += ' silver';
-    else if (i === 2) cls += ' bronze';
-    card.className = cls;
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(10px)';
-    card.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    card.innerHTML = `
-      <span class="place">${w.place}等</span>
-      <span class="name">${w.person.name}${teamPillRoulette(w.person.team)}</span>
-      <span class="pct">${w.prize}%</span>`;
-    container.appendChild(card);
-    setTimeout(() => {
-      card.style.opacity = '1';
-      card.style.transform = 'translateY(0)';
-      haptic(8);
-    }, 100 + i * 320);
-  });
+function nextRevealStep() {
+  if (_revealSpinning) return;
 
-  setTimeout(() => {
-    btn.disabled = false;
+  // All done -> reset to "もう一度回す"
+  if (_revealIdx >= _revealQueue.length) {
+    const btn = document.getElementById('rouletteStartBtn');
     btn.textContent = '🎲 もう一度回す';
-  }, 100 + winners.length * 320 + 400);
+    btn.onclick = startRoulette;
+    setRouletteStepHint('');
+    return;
+  }
+
+  const w = _revealQueue[_revealIdx];
+  const isTopPrize = (w.place === 1);
+  const container = document.getElementById('rouletteResult');
+  const btn = document.getElementById('rouletteStartBtn');
+
+  // Insert new card at the TOP so the latest is most visible.
+  // (visually the result list ends up with 1等 on top after all reveals.)
+  const card = document.createElement('div');
+  card.className = `roulette-result-card is-spinning ${classForPlace(w.place)}`.trim();
+  card.innerHTML = `
+    <span class="place">${w.place}等</span>
+    <span class="name">？？？</span>
+    <span class="pct">${w.prize}%</span>`;
+  container.insertBefore(card, container.firstChild);
+
+  const slotName = card.querySelector('.name');
+  _revealSpinning = true;
+  btn.disabled = true;
+  setRouletteStepHint(`🎰 ${w.place}等 を抽選中...`);
+
+  let elapsed = 0;
+  let interval = 70;
+  const totalDuration = isTopPrize ? 3200 + Math.floor(Math.random() * 700)
+                                   : 2000 + Math.floor(Math.random() * 700);
+  function tick() {
+    elapsed += interval;
+    const candidate = MEMBERS[Math.floor(Math.random() * MEMBERS.length)];
+    slotName.textContent = candidate;
+    haptic(4);
+    if (elapsed < totalDuration) {
+      const progress = elapsed / totalDuration;
+      if (progress > 0.55) interval = Math.min(380, interval * 1.18);
+      _revealSpinTimer = setTimeout(tick, interval);
+    } else {
+      // Settle
+      _revealSpinTimer = null;
+      card.classList.remove('is-spinning');
+      card.classList.add('is-settled');
+      slotName.innerHTML = w.person.name + teamPillRoulette(w.person.team);
+      haptic(22);
+      _revealSpinning = false;
+      _revealIdx++;
+      if (_revealIdx >= _revealQueue.length) {
+        btn.textContent = '🎉 終了';
+        btn.disabled = false;
+        setRouletteStepHint('全員発表完了！もう一度押すと終了します。');
+      } else {
+        const next = _revealQueue[_revealIdx];
+        btn.textContent = `🎰 ${next.place}等を発表`;
+        btn.disabled = false;
+        setRouletteStepHint(`次は ${next.place}等 (${next.prize}%) の発表です。`);
+      }
+      if (isTopPrize) {
+        setTimeout(() => confetti.fire(), 200);
+      }
+    }
+  }
+  _revealSpinTimer = setTimeout(tick, interval);
 }
 
 /* ---------- Dynamic UX utilities ---------- */
