@@ -198,11 +198,35 @@
   table.scores td.total {
     background: #eef3e3;
     font-weight: bold;
-    min-width: 52px;
+    min-width: 60px;
     padding: 8px 4px;
     font-size: 14px;
     color: #1e3a07;
+    line-height: 1.2;
   }
+  table.scores td.total .par-diff {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 2px;
+    color: #6b7280;
+  }
+  table.scores td.total .par-diff.over { color: #c2410c; }
+  table.scores td.total .par-diff.under { color: #1e40af; }
+  .par-pill {
+    display: inline-block;
+    background: rgba(0,0,0,0.08);
+    color: inherit;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-left: 6px;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+  .par-pill.over { background: rgba(194,65,12,0.15); color: #c2410c; }
+  .par-pill.under { background: rgba(30,64,175,0.15); color: #1e40af; }
+  .par-pill.even { background: rgba(45,80,22,0.12); color: #2d5016; }
   table.scores tr.team-header td {
     position: static;
     padding: 8px 12px;
@@ -881,6 +905,15 @@
     </div>
 
     <div class="setting-card">
+      <h3>コースのパー数</h3>
+      <p class="note">合計や順位に「+3」「−1」など、パーとの差を表示します。一般的なコースは 72 です。</p>
+      <div class="input-row">
+        <label for="totalParInput">総パー数 (18ホール)</label>
+        <input type="number" id="totalParInput" class="text-input" min="54" max="90" step="1">
+      </div>
+    </div>
+
+    <div class="setting-card">
       <h3>チーム編成</h3>
       <p class="note">各メンバーを A / B のどちらかに割り当ててください。同じボタンをもう一度押すと解除できます。3対4 での対抗戦を想定。</p>
       <div class="split-toggle">
@@ -994,6 +1027,7 @@ function loadState() {
         if (!parsed.date) parsed.date = todayStr();
         if (parsed.venue == null) parsed.venue = '';
         if (!Array.isArray(parsed.history)) parsed.history = [];
+        if (!parsed.totalPar) parsed.totalPar = 72;
         return parsed;
       }
     }
@@ -1005,6 +1039,7 @@ function loadState() {
     date: todayStr(),
     venue: '',
     history: [],
+    totalPar: 72,
   };
 }
 
@@ -1022,6 +1057,23 @@ function frontSum(member) { return frontHoles().reduce((s, h) => s + (state.scor
 function backSum(member)  { return backHoles().reduce((s, h) => s + (state.scores[member][h] || 0), 0); }
 function totalOf(member)  { return state.scores[member].reduce((s, v) => s + (v || 0), 0); }
 function holesDone(member) { return state.scores[member].filter(v => v != null).length; }
+
+function totalPar() { return Number(state.totalPar) || 72; }
+function parForHoles(n) { return Math.round((totalPar() * n) / HOLES); }
+function diffForMember(member) {
+  const h = holesDone(member);
+  if (h === 0) return null;
+  return totalOf(member) - parForHoles(h);
+}
+function formatDiff(d) {
+  if (d == null) return '';
+  if (d === 0) return 'E';
+  return d > 0 ? '+' + d : String(d);
+}
+function diffClass(d) {
+  if (d == null || d === 0) return 'even';
+  return d > 0 ? 'over' : 'under';
+}
 
 function setTeam(member, team) {
   state.teams[member] = state.teams[member] === team ? null : team;
@@ -1043,13 +1095,20 @@ function setScore(member, holeIndex, raw) {
   renderRanking();
 }
 
+function totalCellContent(member) {
+  const t = totalOf(member);
+  if (t === 0) return '-';
+  const d = diffForMember(member);
+  return `${t}<span class="par-diff ${diffClass(d)}">${formatDiff(d)}</span>`;
+}
+
 function updateTotalsRow(member) {
   const front = document.getElementById('front-' + member);
   const back = document.getElementById('back-' + member);
   const tot = document.getElementById('total-' + member);
   if (front) front.textContent = frontSum(member) || '-';
   if (back) back.textContent = backSum(member) || '-';
-  if (tot) tot.textContent = totalOf(member) || '-';
+  if (tot) tot.innerHTML = totalCellContent(member);
   updateTeamSum(state.teams[member] || 'none');
 }
 
@@ -1090,7 +1149,7 @@ function renderScoreTable() {
   const table = document.getElementById('scoreTable');
   const order = getPlayOrder();
 
-  let displayHoles, showFront = false, showBack = false, showTotal = false, breakAt = -1;
+  let displayHoles, showFront = false, showBack = false, breakAt = -1;
   if (scoreView === 'out') {
     displayHoles = order.slice(0, 9);
     showFront = true;
@@ -1101,9 +1160,9 @@ function renderScoreTable() {
     displayHoles = order;
     showFront = true;
     showBack = true;
-    showTotal = true;
-    breakAt = 8; // after 9th displayed hole
+    breakAt = 8;
   }
+  const showTotal = true; // 合計は常に表示
 
   let colCount = 1 + displayHoles.length;
   if (showFront) colCount += 1;
@@ -1143,7 +1202,7 @@ function renderScoreTable() {
       });
       if (scoreView === 'out') html += `<td class="subtotal" id="front-${m}">${frontSum(m) || '-'}</td>`;
       if (showBack) html += `<td class="subtotal" id="back-${m}">${backSum(m) || '-'}</td>`;
-      if (showTotal) html += `<td class="total" id="total-${m}">${totalOf(m) || '-'}</td>`;
+      if (showTotal) html += `<td class="total" id="total-${m}">${totalCellContent(m)}</td>`;
       html += '</tr>';
     });
   });
@@ -1154,6 +1213,7 @@ function renderScoreTable() {
     inp.addEventListener('input', () => {
       const cleaned = inp.value.replace(/[^0-9]/g, '').slice(0, 2);
       if (cleaned !== inp.value) inp.value = cleaned;
+      setScore(inp.dataset.m, +inp.dataset.h, inp.value);
     });
     inp.addEventListener('blur', () => {
       const v = inp.value;
@@ -1165,9 +1225,9 @@ function renderScoreTable() {
           void inp.offsetWidth;
           inp.classList.add('invalid-flash');
           setTimeout(() => inp.classList.remove('invalid-flash'), 600);
+          setScore(inp.dataset.m, +inp.dataset.h, '');
         }
       }
-      setScore(inp.dataset.m, +inp.dataset.h, inp.value);
     });
   });
 }
@@ -1213,6 +1273,7 @@ function renderRanking() {
       front: frontSum(m),
       back: backSum(m),
       holes: holesDone(m),
+      diff: diffForMember(m),
     }))
     .filter(x => x.holes > 0)
     .sort((a, b) => a.total - b.total);
@@ -1243,12 +1304,13 @@ function renderRanking() {
 
   rank1.forEach(r => {
     const progress = r.holes >= HOLES ? `🎉 ${HOLES}ホール完走` : `${r.holes}/${HOLES} ホール進行中`;
+    const diffPill = `<span class="par-pill ${diffClass(r.diff)}">${formatDiff(r.diff)}</span>`;
     html += `
       <div class="podium-card">
         <div class="medal">🥇</div>
         <div class="rank-label">${r.rank}位</div>
         <div class="name">${r.name}${teamPillHtml(r.team)}</div>
-        <div class="score">${r.total}</div>
+        <div class="score">${r.total}${diffPill}</div>
         <div class="detail">前半 ${r.front || '–'} ・ 後半 ${r.back || '–'} ・ ${progress}</div>
       </div>`;
   });
@@ -1256,25 +1318,23 @@ function renderRanking() {
   if (rank2.length > 0 || rank3.length > 0) {
     html += '<div class="runner-row">';
     rank2.forEach(r => {
-      const diff = r.total - leader.total;
+      const diffPill = `<span class="par-pill ${diffClass(r.diff)}">${formatDiff(r.diff)}</span>`;
       html += `
         <div class="runner silver">
           <div class="medal">🥈</div>
           <div class="rank-label">${r.rank}位</div>
           <div class="name">${r.name}${teamPillHtml(r.team)}</div>
-          <div class="score">${r.total}</div>
-          <div class="detail">${diff > 0 ? '+' + diff : '–'}</div>
+          <div class="score">${r.total}${diffPill}</div>
         </div>`;
     });
     rank3.forEach(r => {
-      const diff = r.total - leader.total;
+      const diffPill = `<span class="par-pill ${diffClass(r.diff)}">${formatDiff(r.diff)}</span>`;
       html += `
         <div class="runner bronze">
           <div class="medal">🥉</div>
           <div class="rank-label">${r.rank}位</div>
           <div class="name">${r.name}${teamPillHtml(r.team)}</div>
-          <div class="score">${r.total}</div>
-          <div class="detail">${diff > 0 ? '+' + diff : '–'}</div>
+          <div class="score">${r.total}${diffPill}</div>
         </div>`;
     });
     html += '</div>';
@@ -1283,13 +1343,12 @@ function renderRanking() {
   if (rest.length > 0) {
     html += '<div class="rank-list">';
     rest.forEach((r, idx) => {
-      const diff = r.total - leader.total;
+      const diffPill = `<span class="par-pill ${diffClass(r.diff)}">${formatDiff(r.diff)}</span>`;
       html += `
         <div class="rank-list-item" style="animation-delay:${0.05 * idx}s">
           <div class="rank-num">${r.rank}</div>
           <div class="name">${r.name}${teamPillHtml(r.team)}</div>
-          <div class="score">${r.total}</div>
-          <div class="diff">${diff > 0 ? '+' + diff : ''}</div>
+          <div class="score">${r.total}${diffPill}</div>
         </div>`;
     });
     html += '</div>';
@@ -1874,6 +1933,21 @@ document.getElementById('resetBtn').onclick = () => {
 
 renderStartHoleSelect();
 document.getElementById('startHoleSelect').onchange = (e) => setStartHole(Number(e.target.value));
+
+const parInp = document.getElementById('totalParInput');
+parInp.value = state.totalPar;
+parInp.onchange = (e) => {
+  const n = parseInt(e.target.value, 10);
+  if (Number.isInteger(n) && n >= 54 && n <= 90) {
+    state.totalPar = n;
+  } else {
+    state.totalPar = 72;
+    e.target.value = 72;
+  }
+  saveState();
+  renderScoreTable();
+  renderRanking();
+};
 
 const dateInp = document.getElementById('dateInput');
 dateInp.value = state.date;
