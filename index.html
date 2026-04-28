@@ -203,6 +203,31 @@
     font-size: 14px;
     color: #1e3a07;
   }
+  table.scores tr.team-header td {
+    position: static;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    color: #fff;
+    border-bottom: none;
+    box-shadow: none;
+  }
+  table.scores tr.team-header.team-A td { background: #3b82f6; }
+  table.scores tr.team-header.team-B td { background: #ef4444; }
+  table.scores tr.team-header.team-none td { background: #9ca3af; }
+  table.scores tr.team-header .team-total {
+    float: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    background: rgba(255,255,255,0.22);
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+  table.scores tr.row-A td.name-col { background: #eff6ff; }
+  table.scores tr.row-B td.name-col { background: #fef2f2; }
+  table.scores tr.row-none td.name-col { background: #f9fafb; }
   .team-badge {
     display: inline-block;
     width: 10px;
@@ -379,6 +404,15 @@ function updateTotalsRow(member) {
   if (out) out.textContent = outOf(member) || '-';
   if (inn) inn.textContent = inOf(member) || '-';
   if (tot) tot.textContent = totalOf(member) || '-';
+  updateTeamSum(state.teams[member] || 'none');
+}
+
+function updateTeamSum(key) {
+  const team = key === 'none' ? null : key;
+  const members = MEMBERS.filter(m => state.teams[m] === team);
+  const sum = members.reduce((s, m) => s + totalOf(m), 0);
+  const el = document.getElementById('team-sum-' + (team || 'none'));
+  if (el) el.textContent = sum > 0 ? `合計 ${sum}` : '合計 -';
 }
 
 function renderTeams() {
@@ -413,6 +447,12 @@ function renderScoreTable() {
   else if (scoreView === 'in') { from = 9; to = 18; showOut = false; showIn = true; showTotal = false; }
   else { from = 0; to = 18; showOut = true; showIn = true; showTotal = true; }
 
+  let colCount = 1 + (to - from);
+  if (scoreView === 'out') colCount += 1;
+  if (scoreView === 'in') colCount += 1;
+  if (scoreView === 'all') colCount += 2;
+  if (showTotal) colCount += 1;
+
   let html = '<thead><tr><th class="name-col">メンバー</th>';
   for (let i = from; i < to; i++) {
     html += `<th>${i + 1}</th>`;
@@ -423,20 +463,34 @@ function renderScoreTable() {
   if (showTotal) html += '<th class="total">合計</th>';
   html += '</tr></thead><tbody>';
 
-  MEMBERS.forEach(m => {
-    const t = state.teams[m];
-    const color = t === 'A' ? '#3b82f6' : t === 'B' ? '#ef4444' : '#bbb';
-    html += `<tr><td class="name-col"><span class="team-badge" style="background:${color}"></span>${m}</td>`;
-    for (let h = from; h < to; h++) {
-      const v = state.scores[m][h];
-      html += `<td><input type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="20" value="${v ?? ''}" data-m="${m}" data-h="${h}"></td>`;
-      if (h === 8 && (showOut && scoreView !== 'out')) html += `<td class="subtotal" id="out-${m}">${outOf(m) || '-'}</td>`;
-      if (h === 17 && showIn) html += `<td class="subtotal" id="in-${m}">${inOf(m) || '-'}</td>`;
-    }
-    if (scoreView === 'out') html += `<td class="subtotal" id="out-${m}">${outOf(m) || '-'}</td>`;
-    if (showTotal) html += `<td class="total" id="total-${m}">${totalOf(m) || '-'}</td>`;
-    html += '</tr>';
+  const groups = [
+    { team: 'A', label: 'A チーム', cls: 'team-A', rowCls: 'row-A', members: MEMBERS.filter(m => state.teams[m] === 'A') },
+    { team: 'B', label: 'B チーム', cls: 'team-B', rowCls: 'row-B', members: MEMBERS.filter(m => state.teams[m] === 'B') },
+    { team: null, label: '未割り当て', cls: 'team-none', rowCls: 'row-none', members: MEMBERS.filter(m => state.teams[m] == null) },
+  ].filter(g => g.members.length > 0);
+
+  groups.forEach(group => {
+    const teamSum = group.members.reduce((s, m) => s + totalOf(m), 0);
+    const sumKey = group.team || 'none';
+    const sumText = teamSum > 0 ? `合計 ${teamSum}` : '合計 -';
+    const sumLabel = `<span class="team-total" id="team-sum-${sumKey}">${sumText}</span>`;
+    html += `<tr class="team-header ${group.cls}"><td colspan="${colCount}">${group.label} (${group.members.length}人)${sumLabel}</td></tr>`;
+
+    group.members.forEach(m => {
+      const dotColor = group.team === 'A' ? '#3b82f6' : group.team === 'B' ? '#ef4444' : '#bbb';
+      html += `<tr class="${group.rowCls}"><td class="name-col"><span class="team-badge" style="background:${dotColor}"></span>${m}</td>`;
+      for (let h = from; h < to; h++) {
+        const v = state.scores[m][h];
+        html += `<td><input type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="20" value="${v ?? ''}" data-m="${m}" data-h="${h}"></td>`;
+        if (h === 8 && (showOut && scoreView !== 'out')) html += `<td class="subtotal" id="out-${m}">${outOf(m) || '-'}</td>`;
+        if (h === 17 && showIn) html += `<td class="subtotal" id="in-${m}">${inOf(m) || '-'}</td>`;
+      }
+      if (scoreView === 'out') html += `<td class="subtotal" id="out-${m}">${outOf(m) || '-'}</td>`;
+      if (showTotal) html += `<td class="total" id="total-${m}">${totalOf(m) || '-'}</td>`;
+      html += '</tr>';
+    });
   });
+
   html += '</tbody>';
   table.innerHTML = html;
   table.querySelectorAll('input').forEach(inp => {
