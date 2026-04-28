@@ -1319,9 +1319,14 @@
 
   <section id="tab-roulette">
     <h2>🎰 賞金ルーレット</h2>
-    <p class="note">順位が高いほど、上位の賞金に当選する確率が上がります。現在の大会の順位を元に抽選します。</p>
-    <h3>抽選対象 (現在の順位)</h3>
+    <p class="note">順位が高いほど、上位の賞金に当選する確率が上がります。スコア未入力でもランダム順位で抽選できます。</p>
+    <div class="split-toggle" id="rouletteMode" style="margin-bottom:12px">
+      <button data-mode="score" class="selected">📊 現在のスコア</button>
+      <button data-mode="random">🎲 ランダム順位</button>
+    </div>
+    <h3 id="rouletteSourceHeading">抽選対象</h3>
     <div id="rouletteSource"></div>
+    <button class="btn-randomize" id="shuffleOrderBtn" style="display:none;margin-top:10px">🔀 順位をシャッフル</button>
     <h3>賞金配分</h3>
     <div class="prize-list" id="prizeList"></div>
     <button class="btn-roulette" id="rouletteStartBtn" disabled>🎲 ルーレット開始</button>
@@ -2321,6 +2326,10 @@ document.querySelectorAll('#splitToggle button').forEach(btn => {
 });
 
 document.getElementById('rouletteStartBtn').onclick = startRoulette;
+document.querySelectorAll('#rouletteMode button').forEach(btn => {
+  btn.onclick = () => setRouletteMode(btn.dataset.mode);
+});
+document.getElementById('shuffleOrderBtn').onclick = shuffleRouletteOrder;
 
 (function wireLegacyForm() {
   const toggle = document.getElementById('legacyAddToggle');
@@ -2421,6 +2430,21 @@ function randomizeTeams() {
 
 /* ---------- Roulette / prize draw ---------- */
 const PRIZE_PERCENTAGES = [30, 25, 20, 15, 6, 3, 1];
+let rouletteMode = 'score';
+let randomOrder = null;
+
+function shuffleMembers() {
+  const arr = [...MEMBERS];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function ensureRandomOrder() {
+  if (!randomOrder) randomOrder = shuffleMembers();
+}
 
 function rouletteRanking() {
   const arr = MEMBERS
@@ -2435,6 +2459,19 @@ function rouletteRanking() {
   return arr;
 }
 
+function rouletteSourceList() {
+  if (rouletteMode === 'random') {
+    ensureRandomOrder();
+    return randomOrder.map((name, i) => ({
+      name,
+      team: state.current.teams[name],
+      total: null,
+      rank: i + 1,
+    }));
+  }
+  return rouletteRanking();
+}
+
 function teamPillRoulette(team) {
   if (team === 'A') return ' <span style="background:#3b82f6;color:#fff;font-size:11px;padding:1px 8px;border-radius:999px;font-weight:700">A</span>';
   if (team === 'B') return ' <span style="background:#ef4444;color:#fff;font-size:11px;padding:1px 8px;border-radius:999px;font-weight:700">B</span>';
@@ -2445,20 +2482,32 @@ function renderRoulette() {
   const sourceEl = document.getElementById('rouletteSource');
   const prizeEl = document.getElementById('prizeList');
   const startBtn = document.getElementById('rouletteStartBtn');
+  const shuffleBtn = document.getElementById('shuffleOrderBtn');
+  const headingEl = document.getElementById('rouletteSourceHeading');
   if (!sourceEl || !prizeEl || !startBtn) return;
 
-  const ranked = rouletteRanking();
+  const ranked = rouletteSourceList();
+
+  if (rouletteMode === 'random') {
+    if (headingEl) headingEl.textContent = '抽選対象 (ランダム順位)';
+    if (shuffleBtn) shuffleBtn.style.display = 'block';
+  } else {
+    if (headingEl) headingEl.textContent = '抽選対象 (現在の順位)';
+    if (shuffleBtn) shuffleBtn.style.display = 'none';
+  }
+
   if (ranked.length === 0) {
-    sourceEl.innerHTML = '<div class="roulette-empty">スコアを入力すると抽選対象が表示されます</div>';
+    sourceEl.innerHTML = '<div class="roulette-empty">スコアを入力すると抽選対象が表示されます<br><small>または「🎲 ランダム順位」で抽選できます</small></div>';
     startBtn.disabled = true;
   } else {
     let html = '<div class="roulette-source">';
     ranked.forEach(r => {
+      const scoreCol = r.total != null ? `<span class="score">${r.total}</span>` : '<span class="score" style="color:#bbb">–</span>';
       html += `
         <div class="roulette-source-row">
           <span class="rank">${r.rank}位</span>
           <span class="name">${r.name}${teamPillRoulette(r.team)}</span>
-          <span class="score">${r.total}</span>
+          ${scoreCol}
         </div>`;
     });
     html += '</div>';
@@ -2466,12 +2515,27 @@ function renderRoulette() {
     startBtn.disabled = false;
   }
 
-  prizeEl.innerHTML = PRIZE_PERCENTAGES.slice(0, Math.max(ranked.length, 7)).map((pct, i) => `
+  const cnt = Math.max(ranked.length, 7);
+  prizeEl.innerHTML = PRIZE_PERCENTAGES.slice(0, cnt).map((pct, i) => `
     <div class="prize-item">
       <span class="label">${i + 1}等</span>
       <span class="pct">${pct}%</span>
     </div>
   `).join('');
+}
+
+function setRouletteMode(mode) {
+  rouletteMode = mode;
+  document.querySelectorAll('#rouletteMode button').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mode === mode);
+  });
+  if (mode === 'random') ensureRandomOrder();
+  renderRoulette();
+}
+
+function shuffleRouletteOrder() {
+  randomOrder = shuffleMembers();
+  renderRoulette();
 }
 
 function weightedPick(weights) {
@@ -2485,7 +2549,7 @@ function weightedPick(weights) {
 }
 
 function startRoulette() {
-  const ranked = rouletteRanking();
+  const ranked = rouletteSourceList();
   if (ranked.length === 0) return;
 
   const pool = [...ranked];
