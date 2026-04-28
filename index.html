@@ -551,6 +551,88 @@
     display: none;
   }
 
+  /* Add history form */
+  .add-history-btn {
+    display: block;
+    width: 100%;
+    background: #fff;
+    border: 2px dashed #2d5016;
+    color: #2d5016;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 16px;
+    min-height: 50px;
+  }
+  .add-history-btn:active { background: #f0eee0; }
+
+  .add-form {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 2px solid #2d5016;
+    animation: slide-up 0.25s ease-out;
+  }
+  .add-form h3 { margin: 0 0 12px; font-size: 16px; color: #2d5016; }
+  .hist-member-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid #eee;
+  }
+  .hist-member-row:first-child { border-top: none; }
+  .hist-member-row .name { flex: 1; font-weight: 500; font-size: 14px; }
+  .team-mini { display: flex; gap: 4px; }
+  .team-mini button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 2px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+  }
+  .team-mini button.team-A.selected { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+  .team-mini button.team-B.selected { background: #ef4444; color: #fff; border-color: #ef4444; }
+  .hist-score-input {
+    width: 64px;
+    padding: 8px 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    text-align: center;
+    font-family: inherit;
+    -moz-appearance: textfield;
+  }
+  .hist-score-input::-webkit-outer-spin-button,
+  .hist-score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .form-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .form-buttons button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    min-height: 44px;
+    font-family: inherit;
+  }
+  .btn-cancel { background: #e5e7eb; color: #333; }
+  .btn-save { background: #2d5016; color: #fff; }
+
   @media (max-width: 360px) {
     header h1 { font-size: 16px; }
     .team-result .score { font-size: 26px; }
@@ -655,6 +737,31 @@
 
   <section id="tab-history">
     <h2>📚 過去の大会</h2>
+
+    <button class="add-history-btn" id="addHistoryBtn">+ 過去の大会を追加</button>
+
+    <div class="add-form" id="addHistoryForm" hidden>
+      <h3>過去の大会を記録</h3>
+      <div class="input-row">
+        <label for="histNumber">第何回</label>
+        <input type="number" id="histNumber" class="text-input" min="1" max="999">
+      </div>
+      <div class="input-row">
+        <label for="histDate">開催日</label>
+        <input type="date" id="histDate" class="date-input">
+      </div>
+      <div class="input-row">
+        <label for="histVenue">開催場所</label>
+        <input type="text" id="histVenue" class="text-input" placeholder="ゴルフ場名">
+      </div>
+      <div style="margin-top:14px;font-size:12px;color:#555;font-weight:bold">メンバーごとのチームと合計スコア</div>
+      <div id="histMembers"></div>
+      <div class="form-buttons">
+        <button class="btn-cancel" id="cancelHistBtn">キャンセル</button>
+        <button class="btn-save" id="saveHistBtn">保存</button>
+      </div>
+    </div>
+
     <div id="historyContent"></div>
   </section>
 </main>
@@ -1025,6 +1132,7 @@ function finishTournament() {
     startHole: state.startHole || 1,
     teams: { ...state.teams },
     scores: Object.fromEntries(MEMBERS.map(m => [m, [...state.scores[m]]])),
+    totals: Object.fromEntries(MEMBERS.map(m => [m, totalOf(m)]).filter(([, v]) => v > 0)),
     winnerName: winner.name,
     winnerTeam: winner.team,
     winnerScore: winner.total,
@@ -1050,22 +1158,29 @@ function finishTournament() {
   }, 600);
 }
 
+function totalForHistMember(h, m) {
+  if (h.totals && h.totals[m] != null) return h.totals[m];
+  const arr = (h.scores && h.scores[m]) || [];
+  return arr.reduce((s, v) => s + (v || 0), 0);
+}
+
 function renderHistory() {
   const container = document.getElementById('historyContent');
   if (!container) return;
-  if (state.history.length === 0) {
+  const items = [...state.history].sort((a, b) => (b.number || 0) - (a.number || 0));
+  if (items.length === 0) {
     container.innerHTML = `
       <div class="history-empty">
         <div class="big">📖</div>
-        <p>まだ記録がありません<br>大会を終わらせると、ここに残ります。</p>
+        <p>まだ記録がありません<br>「+ 過去の大会を追加」または大会を終了すると、ここに残ります。</p>
       </div>`;
     return;
   }
   let html = '';
-  state.history.forEach((h, idx) => {
+  items.forEach((h, idx) => {
     const ranked = MEMBERS
-      .map(m => ({ name: m, team: h.teams[m], total: (h.scores[m] || []).reduce((s, v) => s + (v || 0), 0), holes: (h.scores[m] || []).filter(v => v != null).length }))
-      .filter(x => x.holes > 0)
+      .map(m => ({ name: m, team: (h.teams || {})[m], total: totalForHistMember(h, m) }))
+      .filter(x => x.total > 0)
       .sort((a, b) => a.total - b.total);
     let prevTotal = null, prevRank = 0;
     ranked.forEach((r, i) => {
@@ -1166,6 +1281,99 @@ function fireConfetti() {
   animate();
 }
 
+let histFormTeams = {};
+
+function openAddForm() {
+  const next = state.history.length === 0 ? 1 : Math.max(...state.history.map(h => h.number || 0)) + 1;
+  document.getElementById('histNumber').value = next;
+  document.getElementById('histDate').value = todayStr();
+  document.getElementById('histVenue').value = '';
+  histFormTeams = Object.fromEntries(MEMBERS.map(m => [m, null]));
+  renderHistMembers();
+  document.getElementById('addHistoryBtn').style.display = 'none';
+  document.getElementById('addHistoryForm').removeAttribute('hidden');
+}
+
+function closeAddForm() {
+  document.getElementById('addHistoryForm').setAttribute('hidden', '');
+  document.getElementById('addHistoryBtn').style.display = 'block';
+}
+
+function renderHistMembers() {
+  const container = document.getElementById('histMembers');
+  container.innerHTML = MEMBERS.map(m => {
+    const t = histFormTeams[m];
+    const score = (container._scores && container._scores[m]) || '';
+    return `
+      <div class="hist-member-row">
+        <div class="name">${m}</div>
+        <div class="team-mini">
+          <button class="team-A ${t === 'A' ? 'selected' : ''}" data-m="${m}" data-t="A">A</button>
+          <button class="team-B ${t === 'B' ? 'selected' : ''}" data-m="${m}" data-t="B">B</button>
+        </div>
+        <input type="number" inputmode="numeric" class="hist-score-input" data-m="${m}" placeholder="–" min="1" max="200" value="${score}">
+      </div>`;
+  }).join('');
+  container.querySelectorAll('.team-mini button').forEach(btn => {
+    btn.onclick = () => {
+      // Preserve currently typed scores before re-render
+      const scores = {};
+      container.querySelectorAll('.hist-score-input').forEach(inp => { scores[inp.dataset.m] = inp.value; });
+      container._scores = scores;
+      const m = btn.dataset.m, tt = btn.dataset.t;
+      histFormTeams[m] = histFormTeams[m] === tt ? null : tt;
+      renderHistMembers();
+    };
+  });
+}
+
+function saveManualHistory() {
+  const number = Number(document.getElementById('histNumber').value);
+  const date = document.getElementById('histDate').value || todayStr();
+  const venue = document.getElementById('histVenue').value.trim();
+
+  if (!Number.isFinite(number) || number < 1) {
+    alert('「第何回」を入力してください');
+    return;
+  }
+  if (state.history.some(h => h.number === number)) {
+    if (!confirm(`第 ${number} 回はすでに記録されています。同じ番号で追加しますか?`)) return;
+  }
+
+  const totals = {};
+  document.querySelectorAll('.hist-score-input').forEach(inp => {
+    const v = Number(inp.value);
+    if (Number.isFinite(v) && v > 0) totals[inp.dataset.m] = v;
+  });
+  if (Object.keys(totals).length === 0) {
+    alert('少なくとも 1 人のスコアを入力してください');
+    return;
+  }
+
+  const ranked = Object.entries(totals)
+    .map(([name, total]) => ({ name, team: histFormTeams[name], total }))
+    .sort((a, b) => a.total - b.total);
+  const winner = ranked[0];
+
+  const entry = {
+    id: 'g_' + Date.now(),
+    number,
+    date,
+    venue,
+    teams: { ...histFormTeams },
+    totals,
+    winnerName: winner.name,
+    winnerTeam: winner.team,
+    winnerScore: winner.total,
+    finishedAt: new Date().toISOString(),
+    manual: true,
+  };
+  state.history.push(entry);
+  saveState();
+  closeAddForm();
+  renderHistory();
+}
+
 document.querySelectorAll('nav.bottom-nav button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('nav.bottom-nav button').forEach(b => b.classList.remove('active'));
@@ -1213,6 +1421,10 @@ document.getElementById('finishBtn').onclick = () => {
     finishTournament();
   }
 };
+
+document.getElementById('addHistoryBtn').onclick = openAddForm;
+document.getElementById('cancelHistBtn').onclick = closeAddForm;
+document.getElementById('saveHistBtn').onclick = saveManualHistory;
 
 renderTeams();
 renderScoreTable();
