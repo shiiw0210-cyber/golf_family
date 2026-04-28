@@ -603,14 +603,35 @@
   }
   .add-form h3 { margin: 0 0 12px; font-size: 16px; color: #2d5016; }
   .hist-member-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 8px;
     align-items: center;
-    gap: 8px;
     padding: 10px 0;
     border-top: 1px solid #eee;
   }
   .hist-member-row:first-child { border-top: none; }
-  .hist-member-row .name { flex: 1; font-weight: 500; font-size: 14px; }
+  .hist-member-row .name { font-weight: 500; font-size: 14px; }
+  .hist-score-row {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .hist-score-row .pair { display: flex; align-items: center; gap: 4px; }
+  .hist-score-row .pair label { font-size: 11px; color: #666; font-weight: bold; min-width: 28px; }
+  .hist-total-display {
+    font-size: 14px;
+    font-weight: bold;
+    color: #2d5016;
+    background: #eef3e3;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-left: auto;
+    min-width: 64px;
+    text-align: center;
+  }
   .team-mini { display: flex; gap: 4px; }
   .team-mini button {
     width: 32px;
@@ -1474,12 +1495,19 @@ function renderHistory() {
         <details>
           <summary>全員の順位を見る</summary>
           <div class="full-rank">
-            ${ranked.map(r => `
+            ${ranked.map(r => {
+              const f = h.fronts && h.fronts[r.name];
+              const b = h.backs && h.backs[r.name];
+              const split = (f != null || b != null)
+                ? ` <small style="color:#9ca3af;font-weight:normal">(前${f ?? '–'} / 後${b ?? '–'})</small>`
+                : '';
+              return `
               <div class="full-rank-row">
                 <span class="r">${r.rank}</span>
-                <span class="n">${r.name}${teamPillHtml(r.team)}</span>
+                <span class="n">${r.name}${teamPillHtml(r.team)}${split}</span>
                 <span class="s">${r.total}</span>
-              </div>`).join('')}
+              </div>`;
+            }).join('')}
           </div>
           <button class="delete-btn" data-id="${h.id}">この記録を削除</button>
         </details>
@@ -1573,7 +1601,9 @@ function renderHistMembers() {
   const container = document.getElementById('histMembers');
   container.innerHTML = MEMBERS.map(m => {
     const t = histFormTeams[m];
-    const score = (container._scores && container._scores[m]) || '';
+    const f = (container._fronts && container._fronts[m]) || '';
+    const b = (container._backs && container._backs[m]) || '';
+    const tot = (Number(f) || 0) + (Number(b) || 0);
     return `
       <div class="hist-member-row">
         <div class="name">${m}</div>
@@ -1581,20 +1611,50 @@ function renderHistMembers() {
           <button class="team-A ${t === 'A' ? 'selected' : ''}" data-m="${m}" data-t="A">A</button>
           <button class="team-B ${t === 'B' ? 'selected' : ''}" data-m="${m}" data-t="B">B</button>
         </div>
-        <input type="number" inputmode="numeric" class="hist-score-input" data-m="${m}" placeholder="–" min="1" max="200" value="${score}">
+        <div class="hist-score-row">
+          <div class="pair">
+            <label>前半</label>
+            <input type="number" inputmode="numeric" class="hist-front-input" data-m="${m}" placeholder="–" min="0" max="100" value="${f}">
+          </div>
+          <div class="pair">
+            <label>後半</label>
+            <input type="number" inputmode="numeric" class="hist-back-input" data-m="${m}" placeholder="–" min="0" max="100" value="${b}">
+          </div>
+          <div class="hist-total-display" id="hist-total-${m}">${tot > 0 ? tot : '合計'}</div>
+        </div>
       </div>`;
   }).join('');
+
   container.querySelectorAll('.team-mini button').forEach(btn => {
     btn.onclick = () => {
-      // Preserve currently typed scores before re-render
-      const scores = {};
-      container.querySelectorAll('.hist-score-input').forEach(inp => { scores[inp.dataset.m] = inp.value; });
-      container._scores = scores;
+      preserveScoreInputs();
       const m = btn.dataset.m, tt = btn.dataset.t;
       histFormTeams[m] = histFormTeams[m] === tt ? null : tt;
       renderHistMembers();
     };
   });
+
+  container.querySelectorAll('.hist-front-input, .hist-back-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const cleaned = inp.value.replace(/[^0-9]/g, '').slice(0, 3);
+      if (cleaned !== inp.value) inp.value = cleaned;
+      const m = inp.dataset.m;
+      const f = Number(container.querySelector(`.hist-front-input[data-m="${m}"]`).value) || 0;
+      const b = Number(container.querySelector(`.hist-back-input[data-m="${m}"]`).value) || 0;
+      const tot = f + b;
+      const totEl = document.getElementById('hist-total-' + m);
+      if (totEl) totEl.textContent = tot > 0 ? tot : '合計';
+    });
+  });
+}
+
+function preserveScoreInputs() {
+  const container = document.getElementById('histMembers');
+  const fronts = {}, backs = {};
+  container.querySelectorAll('.hist-front-input').forEach(inp => { fronts[inp.dataset.m] = inp.value; });
+  container.querySelectorAll('.hist-back-input').forEach(inp => { backs[inp.dataset.m] = inp.value; });
+  container._fronts = fronts;
+  container._backs = backs;
 }
 
 function saveManualHistory() {
@@ -1611,12 +1671,21 @@ function saveManualHistory() {
   }
 
   const totals = {};
-  document.querySelectorAll('.hist-score-input').forEach(inp => {
-    const v = Number(inp.value);
-    if (Number.isFinite(v) && v > 0) totals[inp.dataset.m] = v;
+  const fronts = {}, backs = {};
+  MEMBERS.forEach(m => {
+    const fIn = document.querySelector(`.hist-front-input[data-m="${m}"]`);
+    const bIn = document.querySelector(`.hist-back-input[data-m="${m}"]`);
+    const f = fIn ? Number(fIn.value) : 0;
+    const b = bIn ? Number(bIn.value) : 0;
+    const t = (Number.isFinite(f) ? f : 0) + (Number.isFinite(b) ? b : 0);
+    if (t > 0) {
+      totals[m] = t;
+      if (f > 0) fronts[m] = f;
+      if (b > 0) backs[m] = b;
+    }
   });
   if (Object.keys(totals).length === 0) {
-    alert('少なくとも 1 人のスコアを入力してください');
+    alert('少なくとも 1 人のスコア (前半 または 後半) を入力してください');
     return;
   }
 
@@ -1632,6 +1701,8 @@ function saveManualHistory() {
     venue,
     teams: { ...histFormTeams },
     totals,
+    fronts,
+    backs,
     winnerName: winner.name,
     winnerTeam: winner.team,
     winnerScore: winner.total,
