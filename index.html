@@ -633,6 +633,49 @@
   .btn-cancel { background: #e5e7eb; color: #333; }
   .btn-save { background: #2d5016; color: #fff; }
 
+  .randomize-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 12px 0;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
+    min-height: 48px;
+    transition: transform 0.1s, box-shadow 0.2s;
+    font-family: inherit;
+  }
+  .randomize-btn:active { transform: scale(0.98); }
+  .randomize-btn:disabled { cursor: not-allowed; animation: shuffle-pulse 0.4s ease-in-out infinite alternate; }
+  @keyframes shuffle-pulse {
+    from { box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25); }
+    to { box-shadow: 0 4px 24px rgba(109, 40, 217, 0.7); }
+  }
+
+  .split-toggle { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .split-toggle label { color: #555; font-weight: bold; }
+  .split-toggle button {
+    padding: 6px 12px;
+    border: 2px solid #ddd;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .split-toggle button.selected {
+    border-color: #6d28d9;
+    background: #ede9fe;
+    color: #6d28d9;
+  }
+
   @media (max-width: 360px) {
     header h1 { font-size: 16px; }
     .team-result .score { font-size: 26px; }
@@ -707,6 +750,12 @@
     <div class="setting-card">
       <h3>チーム編成</h3>
       <p class="note">各メンバーを A / B のどちらかに割り当ててください。同じボタンをもう一度押すと解除できます。3対4 での対抗戦を想定。</p>
+      <div class="split-toggle">
+        <label>分け方:</label>
+        <button data-split="3-4" class="selected">A 3人 / B 4人</button>
+        <button data-split="4-3">A 4人 / B 3人</button>
+      </div>
+      <button class="randomize-btn" id="randomizeBtn">🎲 チームをランダムに振り分ける</button>
       <div class="team-grid" id="teamGrid"></div>
       <div class="team-summary">
         <div class="bg-A">A チーム <span id="countA">0</span>人</div>
@@ -1374,6 +1423,50 @@ function saveManualHistory() {
   renderHistory();
 }
 
+let splitMode = '3-4'; // A:3 B:4 (or '4-3': A:4 B:3)
+
+function shuffleSplit() {
+  const a = splitMode === '3-4' ? 3 : 4;
+  const shuffled = [...MEMBERS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const result = {};
+  shuffled.forEach((m, i) => { result[m] = i < a ? 'A' : 'B'; });
+  return result;
+}
+
+function randomizeTeams() {
+  const anySet = MEMBERS.some(m => state.teams[m] != null);
+  if (anySet && !confirm('現在のチーム分けを上書きしてランダムに振り分けますか?')) return;
+
+  const btn = document.getElementById('randomizeBtn');
+  btn.disabled = true;
+  btn.textContent = '🎲 シャッフル中...';
+
+  const finalAssignment = shuffleSplit();
+  let frame = 0;
+  const totalFrames = 10;
+  const tick = () => {
+    frame++;
+    if (frame >= totalFrames) {
+      Object.assign(state.teams, finalAssignment);
+      saveState();
+      renderTeams();
+      renderScoreTable();
+      renderRanking();
+      btn.disabled = false;
+      btn.textContent = '🎲 チームをランダムに振り分ける';
+      return;
+    }
+    Object.assign(state.teams, shuffleSplit());
+    renderTeams();
+    setTimeout(tick, 80);
+  };
+  tick();
+}
+
 document.querySelectorAll('nav.bottom-nav button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('nav.bottom-nav button').forEach(b => b.classList.remove('active'));
@@ -1425,6 +1518,15 @@ document.getElementById('finishBtn').onclick = () => {
 document.getElementById('addHistoryBtn').onclick = openAddForm;
 document.getElementById('cancelHistBtn').onclick = closeAddForm;
 document.getElementById('saveHistBtn').onclick = saveManualHistory;
+
+document.getElementById('randomizeBtn').onclick = randomizeTeams;
+document.querySelectorAll('.split-toggle button').forEach(btn => {
+  btn.onclick = () => {
+    splitMode = btn.dataset.split;
+    document.querySelectorAll('.split-toggle button').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  };
+});
 
 renderTeams();
 renderScoreTable();
