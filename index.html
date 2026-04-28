@@ -250,43 +250,166 @@
   }
 
   /* Ranking */
-  .team-result { display: flex; gap: 10px; margin-bottom: 8px; }
-  .team-result > div {
-    flex: 1;
-    padding: 18px 10px;
-    border-radius: 10px;
-    color: #fff;
+  .ranking-empty {
     text-align: center;
-  }
-  .team-result h4 { margin: 0 0 6px; font-size: 15px; }
-  .team-result .members { font-size: 12px; opacity: 0.95; min-height: 18px; line-height: 1.4; }
-  .team-result .score { font-size: 30px; font-weight: bold; margin-top: 8px; line-height: 1; }
-  .winner { outline: 4px solid #ffd700; outline-offset: -4px; }
-  .verdict {
-    text-align: center;
-    font-weight: bold;
-    margin: 14px 0 22px;
-    font-size: 15px;
-    line-height: 1.5;
-  }
-  .ranking-table {
-    width: 100%;
+    padding: 48px 20px;
     background: #fff;
-    border-collapse: collapse;
-    border-radius: 8px;
-    overflow: hidden;
+    border-radius: 12px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    color: #888;
   }
-  .ranking-table th, .ranking-table td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #eee;
-    text-align: left;
-    font-size: 14px;
+  .ranking-empty .big { font-size: 56px; line-height: 1; margin-bottom: 12px; }
+  .ranking-empty p { margin: 0; font-size: 14px; }
+
+  .podium-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 60%, #fcd34d 100%);
+    border: 2px solid #f59e0b;
+    border-radius: 18px;
+    padding: 22px 18px;
+    text-align: center;
+    margin-bottom: 14px;
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);
+    animation: podium-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .ranking-table th { background: #ecebe2; font-size: 13px; }
-  .ranking-table .rank { width: 36px; text-align: center; font-weight: bold; }
-  .ranking-table .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .ranking-table tr.top1 td { background: #fffbea; font-weight: bold; }
+  .podium-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 35%);
+    animation: shimmer 6s linear infinite;
+    pointer-events: none;
+  }
+  .podium-card > * { position: relative; z-index: 1; }
+  @keyframes podium-pop {
+    0% { opacity: 0; transform: scale(0.92); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shimmer {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .podium-card .medal {
+    font-size: 60px;
+    line-height: 1;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    animation: bounce 1.6s ease-in-out infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .podium-card .rank-label {
+    font-size: 12px;
+    color: #92400e;
+    font-weight: bold;
+    letter-spacing: 0.15em;
+    margin-top: 4px;
+  }
+  .podium-card .name {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 8px 0 4px;
+    color: #1f2937;
+  }
+  .podium-card .score {
+    font-size: 56px;
+    font-weight: 900;
+    color: #92400e;
+    line-height: 1;
+    margin: 6px 0 8px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 4px rgba(146, 64, 14, 0.15);
+  }
+  .podium-card .detail {
+    font-size: 13px;
+    color: #78350f;
+    opacity: 0.85;
+  }
+
+  .runner-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .runner {
+    flex: 1;
+    padding: 16px 10px;
+    border-radius: 14px;
+    text-align: center;
+    border: 2px solid;
+    animation: slide-up 0.4s ease-out;
+  }
+  .runner.silver { background: linear-gradient(135deg, #f9fafb, #e5e7eb); border-color: #9ca3af; }
+  .runner.bronze { background: linear-gradient(135deg, #fed7aa, #fdba74); border-color: #c2410c; }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .runner .medal { font-size: 36px; line-height: 1; }
+  .runner .rank-label { font-size: 11px; font-weight: bold; letter-spacing: 0.12em; margin-top: 2px; }
+  .runner.silver .rank-label { color: #4b5563; }
+  .runner.bronze .rank-label { color: #7c2d12; }
+  .runner .name { font-size: 15px; font-weight: bold; margin: 6px 0 2px; }
+  .runner .score { font-size: 32px; font-weight: 900; line-height: 1; margin: 4px 0 4px; font-variant-numeric: tabular-nums; }
+  .runner.silver .score { color: #374151; }
+  .runner.bronze .score { color: #7c2d12; }
+  .runner .detail { font-size: 12px; opacity: 0.75; }
+
+  .rank-list { display: flex; flex-direction: column; gap: 6px; }
+  .rank-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    padding: 12px 14px;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    animation: slide-up 0.35s ease-out backwards;
+  }
+  .rank-list-item:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+  .rank-list-item .rank-num {
+    font-size: 18px;
+    font-weight: 800;
+    color: #9ca3af;
+    min-width: 30px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .rank-list-item .name { flex: 1; font-weight: 500; font-size: 15px; }
+  .rank-list-item .score {
+    font-size: 20px;
+    font-weight: 800;
+    color: #2d5016;
+    font-variant-numeric: tabular-nums;
+  }
+  .rank-list-item .diff {
+    font-size: 12px;
+    color: #9ca3af;
+    min-width: 38px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .team-pill {
+    display: inline-block;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 4px;
+    font-weight: bold;
+    vertical-align: middle;
+    letter-spacing: 0.05em;
+  }
+  .pill-A { background: #3b82f6; }
+  .pill-B { background: #ef4444; }
+  .pill-none { background: #9ca3af; }
+
+  section.active { animation: fade-in 0.3s ease-out; }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   @media (max-width: 360px) {
     header h1 { font-size: 16px; }
@@ -371,12 +494,8 @@
   </section>
 
   <section id="tab-ranking">
-    <h2>ランキング</h2>
-    <h3>チーム対抗</h3>
-    <div class="team-result" id="teamResult"></div>
-    <div class="verdict" id="verdict"></div>
-    <h3>個人ランキング</h3>
-    <table class="ranking-table" id="individualTable"></table>
+    <h2>🏆 個人ランキング</h2>
+    <div id="rankingContent"></div>
   </section>
 </main>
 
@@ -584,64 +703,106 @@ function setStartHole(n) {
   renderScoreTable();
 }
 
+function teamPillHtml(team) {
+  const cls = team === 'A' ? 'pill-A' : team === 'B' ? 'pill-B' : 'pill-none';
+  const label = team || '–';
+  return `<span class="team-pill ${cls}">${label}</span>`;
+}
+
 function renderRanking() {
-  const teamResult = document.getElementById('teamResult');
-  const verdict = document.getElementById('verdict');
-  let aTotal = 0, bTotal = 0;
-  const aMembers = [], bMembers = [];
-  MEMBERS.forEach(m => {
-    const t = state.teams[m];
-    if (t === 'A') { aTotal += totalOf(m); aMembers.push(m); }
-    if (t === 'B') { bTotal += totalOf(m); bMembers.push(m); }
-  });
-  const hasAny = aTotal > 0 || bTotal > 0;
-  const bothStarted = aTotal > 0 && bTotal > 0;
-  const aWin = bothStarted && aTotal < bTotal;
-  const bWin = bothStarted && bTotal < aTotal;
-  teamResult.innerHTML = `
-    <div class="bg-A ${aWin ? 'winner' : ''}">
-      <h4>A チーム (${aMembers.length}人)</h4>
-      <div class="members">${aMembers.join(' / ') || '未設定'}</div>
-      <div class="score">${aTotal || '-'}</div>
-    </div>
-    <div class="bg-B ${bWin ? 'winner' : ''}">
-      <h4>B チーム (${bMembers.length}人)</h4>
-      <div class="members">${bMembers.join(' / ') || '未設定'}</div>
-      <div class="score">${bTotal || '-'}</div>
-    </div>`;
-  if (!hasAny) {
-    verdict.textContent = 'スコアを入力すると結果が表示されます';
-    verdict.style.color = '#888';
-  } else if (!bothStarted) {
-    verdict.textContent = '両チームのスコアが入ると勝敗が出ます';
-    verdict.style.color = '#888';
-  } else if (aTotal === bTotal) {
-    verdict.textContent = '🤝 現在タイ';
-    verdict.style.color = '#555';
-  } else {
-    const winner = aWin ? 'A' : 'B';
-    const diff = Math.abs(aTotal - bTotal);
-    verdict.textContent = `🏆 ${winner} チームが ${diff} 打リード`;
-    verdict.style.color = aWin ? '#1e40af' : '#b91c1c';
-  }
+  const container = document.getElementById('rankingContent');
 
   const ranked = MEMBERS
-    .map(m => ({ name: m, team: state.teams[m], total: totalOf(m), holes: holesDone(m) }))
+    .map(m => ({
+      name: m,
+      team: state.teams[m],
+      total: totalOf(m),
+      front: frontSum(m),
+      back: backSum(m),
+      holes: holesDone(m),
+    }))
     .filter(x => x.holes > 0)
     .sort((a, b) => a.total - b.total);
-  const tbl = document.getElementById('individualTable');
+
   if (ranked.length === 0) {
-    tbl.innerHTML = '<tr><td style="padding:16px;color:#888">スコアを入力するとランキングが表示されます</td></tr>';
+    container.innerHTML = `
+      <div class="ranking-empty">
+        <div class="big">⛳</div>
+        <p>スコアを入力するとランキングが表示されます</p>
+      </div>`;
     return;
   }
-  let html = '<thead><tr><th class="rank">#</th><th>名前</th><th>チーム</th><th class="num">スコア</th><th class="num">消化</th></tr></thead><tbody>';
+
+  // assign ranks with ties
+  let prevTotal = null, prevRank = 0;
   ranked.forEach((r, i) => {
-    const teamLabel = r.team ? `${r.team}` : '-';
-    const cls = i === 0 ? 'top1' : '';
-    html += `<tr class="${cls}"><td class="rank">${i + 1}</td><td>${r.name}</td><td>${teamLabel}</td><td class="num">${r.total}</td><td class="num">${r.holes}/${HOLES}</td></tr>`;
+    if (r.total === prevTotal) r.rank = prevRank;
+    else { r.rank = i + 1; prevRank = r.rank; prevTotal = r.total; }
   });
-  html += '</tbody>';
-  tbl.innerHTML = html;
+
+  const leader = ranked[0];
+  const rank1 = ranked.filter(r => r.rank === 1);
+  const rank2 = ranked.filter(r => r.rank === 2);
+  const rank3 = ranked.filter(r => r.rank === 3);
+  const rest = ranked.filter(r => r.rank >= 4);
+
+  let html = '';
+
+  rank1.forEach(r => {
+    const progress = r.holes >= HOLES ? `🎉 ${HOLES}ホール完走` : `${r.holes}/${HOLES} ホール進行中`;
+    html += `
+      <div class="podium-card">
+        <div class="medal">🥇</div>
+        <div class="rank-label">${r.rank}位</div>
+        <div class="name">${r.name}${teamPillHtml(r.team)}</div>
+        <div class="score">${r.total}</div>
+        <div class="detail">前半 ${r.front || '–'} ・ 後半 ${r.back || '–'} ・ ${progress}</div>
+      </div>`;
+  });
+
+  if (rank2.length > 0 || rank3.length > 0) {
+    html += '<div class="runner-row">';
+    rank2.forEach(r => {
+      const diff = r.total - leader.total;
+      html += `
+        <div class="runner silver">
+          <div class="medal">🥈</div>
+          <div class="rank-label">${r.rank}位</div>
+          <div class="name">${r.name}${teamPillHtml(r.team)}</div>
+          <div class="score">${r.total}</div>
+          <div class="detail">${diff > 0 ? '+' + diff : '–'}</div>
+        </div>`;
+    });
+    rank3.forEach(r => {
+      const diff = r.total - leader.total;
+      html += `
+        <div class="runner bronze">
+          <div class="medal">🥉</div>
+          <div class="rank-label">${r.rank}位</div>
+          <div class="name">${r.name}${teamPillHtml(r.team)}</div>
+          <div class="score">${r.total}</div>
+          <div class="detail">${diff > 0 ? '+' + diff : '–'}</div>
+        </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (rest.length > 0) {
+    html += '<div class="rank-list">';
+    rest.forEach((r, idx) => {
+      const diff = r.total - leader.total;
+      html += `
+        <div class="rank-list-item" style="animation-delay:${0.05 * idx}s">
+          <div class="rank-num">${r.rank}</div>
+          <div class="name">${r.name}${teamPillHtml(r.team)}</div>
+          <div class="score">${r.total}</div>
+          <div class="diff">${diff > 0 ? '+' + diff : ''}</div>
+        </div>`;
+    });
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
 }
 
 document.querySelectorAll('nav.bottom-nav button').forEach(btn => {
