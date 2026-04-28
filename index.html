@@ -839,6 +839,15 @@
     margin-left: 8px;
     vertical-align: middle;
   }
+  table.scores input.invalid-flash {
+    background: #fee2e2 !important;
+    animation: invalid-shake 0.4s ease-in-out;
+  }
+  @keyframes invalid-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
 </style>
 </head>
 <body>
@@ -1023,12 +1032,12 @@ function setTeam(member, team) {
 }
 
 function setScore(member, holeIndex, raw) {
-  if (raw === '' || raw == null) {
-    state.scores[member][holeIndex] = null;
-  } else {
-    const n = Number(raw);
-    state.scores[member][holeIndex] = Number.isFinite(n) && n > 0 ? n : null;
+  let value = null;
+  if (raw !== '' && raw != null) {
+    const n = parseInt(raw, 10);
+    if (Number.isInteger(n) && n >= 1 && n <= 20) value = n;
   }
+  state.scores[member][holeIndex] = value;
   saveState();
   updateTotalsRow(member);
   renderRanking();
@@ -1142,8 +1151,24 @@ function renderScoreTable() {
   html += '</tbody>';
   table.innerHTML = html;
   table.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('change', () => setScore(inp.dataset.m, +inp.dataset.h, inp.value));
-    inp.addEventListener('blur', () => setScore(inp.dataset.m, +inp.dataset.h, inp.value));
+    inp.addEventListener('input', () => {
+      const cleaned = inp.value.replace(/[^0-9]/g, '').slice(0, 2);
+      if (cleaned !== inp.value) inp.value = cleaned;
+    });
+    inp.addEventListener('blur', () => {
+      const v = inp.value;
+      if (v !== '') {
+        const n = parseInt(v, 10);
+        if (!Number.isInteger(n) || n < 1 || n > 20) {
+          inp.value = '';
+          inp.classList.remove('invalid-flash');
+          void inp.offsetWidth;
+          inp.classList.add('invalid-flash');
+          setTimeout(() => inp.classList.remove('invalid-flash'), 600);
+        }
+      }
+      setScore(inp.dataset.m, +inp.dataset.h, inp.value);
+    });
   });
 }
 
