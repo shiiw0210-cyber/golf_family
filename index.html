@@ -676,6 +676,130 @@
     color: #6d28d9;
   }
 
+  /* Roulette */
+  .roulette-intro {
+    background: #fff;
+    padding: 14px;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #444;
+  }
+  .roulette-intro strong { color: #2d5016; }
+  .roulette-source {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 16px;
+    font-family: inherit;
+    margin-bottom: 12px;
+    min-height: 44px;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path fill='%232d5016' d='M6 8L0 0h12z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .wheel-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin: 16px 0 8px;
+  }
+  .wheel-pointer {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 16px solid transparent;
+    border-right: 16px solid transparent;
+    border-top: 28px solid #2d5016;
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+  .wheel-canvas {
+    border-radius: 50%;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2), inset 0 0 0 6px #fff;
+    background: #fff;
+  }
+  .wheel-canvas.spinning { transition: transform 4.5s cubic-bezier(0.17, 0.67, 0.12, 0.98); }
+  .spin-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    border: none;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 8px 0 12px;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+    min-height: 56px;
+    font-family: inherit;
+  }
+  .spin-btn:active:not(:disabled) { transform: scale(0.98); }
+  .spin-btn:disabled { background: #d1d5db; color: #888; box-shadow: none; cursor: not-allowed; }
+
+  .weight-list {
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .weight-list h4 { margin: 0 0 8px; font-size: 13px; color: #555; }
+  .weight-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 14px;
+  }
+  .weight-row:last-child { border-bottom: none; }
+  .weight-color {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    margin-right: 10px;
+  }
+  .weight-rank { font-weight: bold; min-width: 30px; color: #6b7280; }
+  .weight-name { flex: 1; }
+  .weight-pct { font-weight: 800; color: #2d5016; font-variant-numeric: tabular-nums; }
+
+  .result-banner {
+    text-align: center;
+    background: linear-gradient(135deg, #fef3c7, #fde68a, #fcd34d);
+    border: 3px solid #f59e0b;
+    border-radius: 14px;
+    padding: 22px 16px;
+    margin: 16px 0;
+    animation: result-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+  }
+  @keyframes result-pop {
+    0% { opacity: 0; transform: scale(0.7); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .result-banner .label { font-size: 12px; color: #92400e; font-weight: bold; letter-spacing: 0.15em; }
+  .result-banner .crown { font-size: 40px; line-height: 1; }
+  .result-banner .name { font-size: 30px; font-weight: 900; color: #92400e; margin: 6px 0 4px; }
+  .result-banner .pct { font-size: 13px; color: #78350f; }
+
+  .roulette-empty {
+    text-align: center;
+    padding: 36px 20px;
+    background: #fff;
+    border-radius: 12px;
+    color: #888;
+  }
+  .roulette-empty .big { font-size: 48px; margin-bottom: 8px; line-height: 1; }
+
   @media (max-width: 360px) {
     header h1 { font-size: 16px; }
     .team-result .score { font-size: 26px; }
@@ -784,6 +908,18 @@
     <button class="finish-btn" id="finishBtn">🏁 大会を終了して記録する</button>
   </section>
 
+  <section id="tab-roulette">
+    <h2>🎰 ルーレット</h2>
+    <p class="roulette-intro">
+      賞金などを決めるためのルーレットです。<br>
+      <strong>順位が高いほど当たりやすい</strong>ように重み付けされています。
+    </p>
+
+    <select id="rouletteSource" class="roulette-source"></select>
+
+    <div id="rouletteBody"></div>
+  </section>
+
   <section id="tab-history">
     <h2>📚 過去の大会</h2>
 
@@ -820,6 +956,7 @@
   <button data-tab="scores"><span class="icon">📝</span><span>スコア</span></button>
   <button data-tab="ranking"><span class="icon">🏆</span><span>順位</span></button>
   <button data-tab="history"><span class="icon">📚</span><span>履歴</span></button>
+  <button data-tab="roulette"><span class="icon">🎰</span><span>抽選</span></button>
 </nav>
 
 <script>
@@ -1467,6 +1604,217 @@ function randomizeTeams() {
   tick();
 }
 
+const ROULETTE_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#a855f7'];
+let rouletteRotation = 0;
+let isSpinning = false;
+
+function getRouletteRanking() {
+  const sel = document.getElementById('rouletteSource');
+  const src = sel ? sel.value : 'current';
+  if (src === 'current') {
+    return MEMBERS
+      .map(m => ({ name: m, total: totalOf(m), team: state.teams[m] }))
+      .filter(x => x.total > 0)
+      .sort((a, b) => a.total - b.total);
+  }
+  const h = state.history.find(x => x.id === src);
+  if (!h) return [];
+  return MEMBERS
+    .map(m => ({ name: m, total: totalForHistMember(h, m), team: (h.teams || {})[m] }))
+    .filter(x => x.total > 0)
+    .sort((a, b) => a.total - b.total);
+}
+
+function rouletteWeights(n) {
+  const arr = [];
+  for (let i = 0; i < n; i++) arr.push(n - i);
+  return arr;
+}
+
+function renderRouletteSource() {
+  const sel = document.getElementById('rouletteSource');
+  const prev = sel.value;
+  let opts = '<option value="current">現在の大会</option>';
+  [...state.history]
+    .sort((a, b) => (b.number || 0) - (a.number || 0))
+    .forEach(h => {
+      opts += `<option value="${h.id}">第 ${h.number} 回 (${formatDateDisplay(h.date)})</option>`;
+    });
+  sel.innerHTML = opts;
+  if (prev) sel.value = prev;
+  if (!sel.value) sel.value = 'current';
+}
+
+function renderRoulette() {
+  const body = document.getElementById('rouletteBody');
+  const ranking = getRouletteRanking();
+  if (ranking.length < 2) {
+    body.innerHTML = `
+      <div class="roulette-empty">
+        <div class="big">🎯</div>
+        <p>スコアが入っているメンバーが 2 人以上必要です。<br>選択した大会のスコアを確認してください。</p>
+      </div>`;
+    return;
+  }
+
+  const weights = rouletteWeights(ranking.length);
+  const total = weights.reduce((s, w) => s + w, 0);
+
+  let weightHtml = '<div class="weight-list"><h4>当選確率(順位ごと)</h4>';
+  ranking.forEach((p, i) => {
+    const pct = ((weights[i] / total) * 100).toFixed(1);
+    const color = ROULETTE_COLORS[i % ROULETTE_COLORS.length];
+    weightHtml += `
+      <div class="weight-row">
+        <span class="weight-color" style="background:${color}"></span>
+        <span class="weight-rank">${i + 1}位</span>
+        <span class="weight-name">${p.name}</span>
+        <span class="weight-pct">${pct}%</span>
+      </div>`;
+  });
+  weightHtml += '</div>';
+
+  body.innerHTML = `
+    <div class="wheel-container">
+      <div class="wheel-pointer"></div>
+      <canvas class="wheel-canvas" id="wheelCanvas"></canvas>
+    </div>
+    <button class="spin-btn" id="spinBtn">🎰 スピン!</button>
+    <div id="resultArea"></div>
+    ${weightHtml}`;
+
+  setupWheelCanvas();
+  drawWheel(ranking, weights, total);
+
+  document.getElementById('spinBtn').onclick = () => spinRoulette(ranking, weights, total);
+}
+
+function setupWheelCanvas() {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssSize = Math.min(320, window.innerWidth - 60);
+  canvas.style.width = cssSize + 'px';
+  canvas.style.height = cssSize + 'px';
+  canvas.width = cssSize * dpr;
+  canvas.height = cssSize * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  canvas._cssSize = cssSize;
+  canvas.style.transform = `rotate(${rouletteRotation}deg)`;
+}
+
+function drawWheel(ranking, weights, total) {
+  const canvas = document.getElementById('wheelCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = canvas._cssSize;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 6;
+  ctx.clearRect(0, 0, size, size);
+
+  let angle = -Math.PI / 2;
+  ranking.forEach((p, i) => {
+    const sweep = (weights[i] / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, angle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = ROULETTE_COLORS[i % ROULETTE_COLORS.length];
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    const mid = angle + sweep / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(mid);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const pct = ((weights[i] / total) * 100).toFixed(0);
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 2;
+    ctx.fillText(`${p.name} ${pct}%`, r - 14, 0);
+    ctx.restore();
+
+    angle += sweep;
+  });
+
+  // Center hub
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.strokeStyle = '#2d5016';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.fillStyle = '#2d5016';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('⛳', cx, cy);
+}
+
+function spinRoulette(ranking, weights, total) {
+  if (isSpinning) return;
+  isSpinning = true;
+
+  const r = Math.random() * total;
+  let acc = 0, winnerIdx = 0;
+  for (let i = 0; i < ranking.length; i++) {
+    acc += weights[i];
+    if (r < acc) { winnerIdx = i; break; }
+  }
+
+  let segStart = 0;
+  for (let i = 0; i < winnerIdx; i++) segStart += weights[i];
+  const winnerCenterFrac = (segStart + weights[winnerIdx] / 2) / total;
+
+  // Need pointer (top, 0deg from up) to land at winnerCenter
+  // Wheel drawn with segment at angle from top going CW = winnerCenterFrac * 360
+  // Rotating the wheel CCW by winnerCenterFrac*360 brings winner to top
+  // CSS rotate is CW positive, so we rotate by -winnerCenterFrac*360 (or equivalently 360 - that)
+  // Add jitter so winner isn't exactly at center each time
+  const jitter = (Math.random() - 0.5) * (weights[winnerIdx] / total) * 360 * 0.5;
+  const targetMod = (360 - winnerCenterFrac * 360 + jitter + 360 * 10) % 360;
+
+  const currentMod = ((rouletteRotation % 360) + 360) % 360;
+  let delta = (targetMod - currentMod + 360) % 360;
+  delta += 360 * 6; // 6 full extra rotations for drama
+  rouletteRotation += delta;
+
+  const canvas = document.getElementById('wheelCanvas');
+  canvas.classList.add('spinning');
+  canvas.style.transform = `rotate(${rouletteRotation}deg)`;
+
+  const btn = document.getElementById('spinBtn');
+  btn.disabled = true;
+  btn.textContent = '🎰 回転中...';
+  document.getElementById('rouletteSource').disabled = true;
+
+  setTimeout(() => {
+    const winner = ranking[winnerIdx];
+    const pct = ((weights[winnerIdx] / total) * 100).toFixed(1);
+    const area = document.getElementById('resultArea');
+    area.innerHTML = `
+      <div class="result-banner">
+        <div class="label">当選者</div>
+        <div class="crown">👑</div>
+        <div class="name">${winner.name}</div>
+        <div class="pct">${winnerIdx + 1}位 ・ 当選確率 ${pct}%</div>
+      </div>`;
+    fireConfetti();
+    btn.disabled = false;
+    btn.textContent = '🎰 もう一度スピン!';
+    document.getElementById('rouletteSource').disabled = false;
+    isSpinning = false;
+  }, 4700);
+}
+
 document.querySelectorAll('nav.bottom-nav button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('nav.bottom-nav button').forEach(b => b.classList.remove('active'));
@@ -1474,6 +1822,10 @@ document.querySelectorAll('nav.bottom-nav button').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (btn.dataset.tab === 'roulette') {
+      renderRouletteSource();
+      renderRoulette();
+    }
   };
 });
 
@@ -1527,6 +1879,14 @@ document.querySelectorAll('.split-toggle button').forEach(btn => {
     btn.classList.add('selected');
   };
 });
+
+document.getElementById('rouletteSource').onchange = () => {
+  rouletteRotation = 0;
+  renderRoulette();
+};
+
+renderRouletteSource();
+renderRoulette();
 
 renderTeams();
 renderScoreTable();
